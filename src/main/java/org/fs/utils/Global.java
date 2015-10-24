@@ -21,16 +21,6 @@ import org.fs.utils.io.IOUtils;
 /** <i>Warning:</i> functions from here can later be moved to other utility classes */
 public final class Global {
 	
-	/** @return current application path with / as a delimeter */
-	public static String getCurrPath() {
-		final String path = System.getProperty("user.dir").replace('\\', '/');
-		// String path = System.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-		// someClassInstance.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-		// for (int i = path.length() - 2; i > 1; i--)
-		// if (path.charAt(i) == '/') return path.substring(0, i);
-		return path;
-	}
-	
 	/**
 	 * Pretty-printed version of a time between two events, in form {@code HH:MM:ss}, e.g. 112:35:16
 	 * (112 hours, 35 minutes and 16 seconds). Will round the value to the closest integer.
