@@ -4,3 +4,8 @@
 .classpath
 .project
 .cache*
+
+# sbt
+target/
+src-managed/
+.history
