@@ -4,7 +4,7 @@ import org.fs.utility.Implicits._
 
 class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     extends IndexedTable[A]
-    with GenTableLike[Int, Int, A, IndexedSeqTable, IndexedSeqTable]{
+    with GenTableLike[Int, Int, A, IndexedSeqTable, IndexedSeqTable] {
   import IndexedSeqTable._
 
   def this() = {
@@ -42,11 +42,22 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     withValueOptionAt(r, c, Some(v))
 
   override def ++[B >: A, ST[+A2] <: GenTableLike[Int, Int, A2, ST, TT], TT[+A2] <: GenTableLike[Int, Int, A2, TT, ST]](that: GenTableLike[Int, Int, B, ST, TT]): IndexedSeqTable[B] = {
-    // TODO: Optimize?
-    val result = that.elementsWithIndices.foldLeft[IndexedSeqTable[B]](this) {
-      case (acc, (r2, c2, v2)) => acc + (r2, c2, v2)
-    }
-    result
+    val thatRowCount = that.sizes._1
+    val maxRowCount = thatRowCount max this.sizes._1
+    val paddedRows = rows padTo (maxRowCount, IndexedSeq.empty[Option[B]])
+    val thatColKeys = that.colKeys
+    val rows2: IndexedSeq[IndexedSeq[Option[B]]] =
+      paddedRows mapWithIndex {
+        case (thisRow, i) if i >= thatRowCount =>
+          thisRow
+        case (thisRow, i) =>
+          val thatRow = that.row(i)
+          val row2 = thatRow.foldLeft(thisRow) {
+            case (row, (i, el)) => row.padTo(i + 1, None).updated(i, Some(el))
+          }
+          row2
+      }
+    fromRows(rows2)
   }
 
   override def -(r: Int, c: Int): IndexedSeqTable[A] = {
@@ -55,13 +66,19 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     else withValueOptionAt(r, c, None)
   }
 
-  override def row(r: Int): IndexedSeq[Option[A]] = {
+  def row(r: Int): Map[Int, A] =
+    rowAsSeq(r).toDefinedMap
+
+  def col(c: Int): Map[Int, A] =
+    colAsSeq(c).toDefinedMap
+
+  override def rowAsSeq(r: Int): IndexedSeq[Option[A]] = {
     checkBounds(r >= 0, "Index should be non-negative")
     checkBounds(r < sizes._1, "Index is too big")
     rows(r) padTo (sizes._2, None)
   }
 
-  override def col(c: Int): IndexedSeq[Option[A]] = {
+  override def colAsSeq(c: Int): IndexedSeq[Option[A]] = {
     checkBounds(c >= 0, "Index should be non-negative")
     checkBounds(c < sizes._2, "Index is too big")
     rows map (_.getFlat(c)) padTo (sizes._1, None)
@@ -98,10 +115,27 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     new IndexedSeqTable(newRows)
   }
 
+  def withRow[B >: A](r: Int, row: Map[Int, B]): IndexedSeqTable[B] = {
+    checkBounds(r >= 0, "Index should be non-negative")
+    val emptyRow = IndexedSeq.fill[Option[B]](row.keys.max + 1)(None)
+    val newRow = row.foldLeft(emptyRow) {
+      case (row, (i, v)) => row.updated(i, Some(v))
+    }
+    withRow(r, newRow)
+  }
+
+  def withCol[B >: A](c: Int, col: Map[Int, B]): IndexedSeqTable[B] = {
+    checkBounds(c >= 0, "Index should be non-negative")
+    val emptyCol = IndexedSeq.fill[Option[B]](col.keys.max + 1)(None)
+    val newCol = col.foldLeft(emptyCol) {
+      case (col, (i, v)) => col.updated(i, Some(v))
+    }
+    withCol(c, newCol)
+  }
+
   override def withRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedSeqTable[B] = {
     checkBounds(r >= 0, "Index should be non-negative")
-    val replacementRow = row.toIndexedSeq
-    val newRows = rows.padTo(r + 1, IndexedSeq.empty).updated(r, replacementRow)
+    val newRows = rows.padTo(r + 1, IndexedSeq.empty).updated(r, row)
     new IndexedSeqTable(newRows)
   }
 
@@ -172,10 +206,10 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
 object IndexedSeqTable {
   def empty[A] = new IndexedSeqTable[A]()
 
-  def fromValues[A](vals: Seq[Seq[A]]) =
+  def fromValues[A](vals: Seq[Seq[A]]): IndexedSeqTable[A] =
     new IndexedSeqTable[A](vals.toIndexedSeq map (_.toIndexedSeq map Some.apply))
 
-  def fromRows[A](rows: Seq[Seq[Option[A]]]) =
+  def fromRows[A](rows: Seq[Seq[Option[A]]]): IndexedSeqTable[A] =
     new IndexedSeqTable[A](rows.toIndexedSeq map (_.toIndexedSeq))
 
   //

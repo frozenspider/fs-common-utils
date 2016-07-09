@@ -32,9 +32,8 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
 
   type ST[+A2] <: SelfType[A2]
 
-  type RowType[+A2]
-
-  type ColType[+A2]
+  type RowType[+A2] = Map[CKT, A2]
+  type ColType[+A2] = Map[RKT, A2]
 
   //
   // State
@@ -98,10 +97,10 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   /** @return column with the given key, elements in which is corresponds to row values */
   def col(c: CKT): ColType[A]
 
-  /** Adds the given row to the table. This might increase row count by more than 1 depending on table implementation */
+  /** Adds/replaces the given row in the table. This might increase row count by more than 1 depending on table implementation. */
   def withRow[B >: A](r: RKT, row: RowType[B]): SelfType[B]
 
-  /** Adds the given row to the table. This might increase column count by more than 1 depending on table implementation */
+  /** Adds/replaces the given column in the table. This might increase column count by more than 1 depending on table implementation. */
   def withCol[B >: A](c: CKT, col: ColType[B]): SelfType[B]
 
   def withEmptyRow(r: RKT): SelfType[A] = {

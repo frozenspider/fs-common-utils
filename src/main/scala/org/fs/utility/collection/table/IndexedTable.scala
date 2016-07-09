@@ -8,25 +8,32 @@ package org.fs.utility.collection.table
 trait IndexedTable[+A]
     extends GenTableLike[Int, Int, A, IndexedTable, IndexedTable] {
 
-  override type RowType[+A2] = IndexedSeq[Option[A2]]
-  override type ColType[+A2] = IndexedSeq[Option[A2]]
-
   /** @return whether or not element with given index can be obtained from this table */
   override def isDefinedAt(r: Int, c: Int): Boolean = {
     r >= 0 && c >= 0 && super.isDefinedAt(r, c)
   }
 
-  override def rowKeys =
-    0 until sizes._1
+  /** @return row with the given key, represented as sequence with None in place of missing elements */
+  def rowAsSeq(r: Int): IndexedSeq[Option[A]]
 
-  override def colKeys =
-    0 until sizes._2
+  /** @return column with the given key, represented as map from row keys to values */
+  def colAsSeq(c: Int): IndexedSeq[Option[A]]
+
+  /** Adds/replaces the sequence-bassed row in the table. Empty trailing elements are NOT trimmed. */
+  def withRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedTable[B]
+
+  /** Adds/replaces the sequence-bassed column in the table. Empty trailing elements are NOT trimmed. */
+  def withCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedTable[B]
+
+  override def rowKeys: Range = 0 until sizes._1
+
+  override def colKeys: Range = 0 until sizes._2
 
   override def emptyRow: RowType[A] =
-    IndexedSeq.empty
+    Map.empty
 
   override def emptyCol: ColType[A] =
-    IndexedSeq.empty
+    Map.empty
 
   //
   // Standard

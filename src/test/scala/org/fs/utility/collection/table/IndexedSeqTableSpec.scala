@@ -3,6 +3,7 @@ package org.fs.utility.collection.table
 import org.junit.runner.RunWith
 import org.scalatest.Spec
 import org.scalatest.junit.JUnitRunner
+import org.fs.utility.Implicits._
 
 @RunWith(classOf[JUnitRunner])
 class IndexedSeqTableSpec extends Spec {
@@ -265,12 +266,31 @@ class IndexedSeqTableSpec extends Spec {
     }
 
     object `row/col -` {
-      def `getters ` = {
-        assert(table.row(0) == SeqOfSome(0, 1, 2))
-        assert(table.row(1) == SeqOfSome(10, 11, 12))
-        assert(table.col(0) == SeqOfSome(0, 10))
-        assert(table.col(1) == SeqOfSome(1, 11))
-        assert(table.col(2) == SeqOfSome(2, 12))
+      def `getters (as map)` = {
+        assert(table.row(0) == Map(0 -> 0, 1 -> 1, 2 -> 2))
+        assert(table.row(1) == Map(0 -> 10, 1 -> 11, 2 -> 12))
+        assert(table.col(0) == Map(0 -> 0, 1 -> 10))
+        assert(table.col(1) == Map(0 -> 1, 1 -> 11))
+        assert(table.col(2) == Map(0 -> 2, 1 -> 12))
+        assert((table + (0, 3, "x")).row(0) == Map(0 -> 0, 1 -> 1, 2 -> 2, 3 -> "x"))
+        assert((table + (0, 3, "x")).row(1) == Map(0 -> 10, 1 -> 11, 2 -> 12))
+        assert((table + (2, 0, "y")).col(0) == Map(0 -> 0, 1 -> 10, 2 -> "y"))
+        assert((table + (2, 0, "y")).col(1) == Map(0 -> 1, 1 -> 11))
+      }
+
+      def `getters (as seq)` = {
+        assert(table.rowAsSeq(0) == SeqOfSome(0, 1, 2))
+        assert(table.rowAsSeq(1) == SeqOfSome(10, 11, 12))
+        assert(table.colAsSeq(0) == SeqOfSome(0, 10))
+        assert(table.colAsSeq(1) == SeqOfSome(1, 11))
+        assert(table.colAsSeq(2) == SeqOfSome(2, 12))
+        assert((table + (0, 3, "x")).rowAsSeq(0) == SeqOfSome(0, 1, 2, "x"))
+        assert((table + (0, 3, "x")).rowAsSeq(1) == Seq(Some(10), Some(11), Some(12), None))
+        assert((table + (2, 0, "y")).colAsSeq(0) == SeqOfSome(0, 10, "y"))
+        assert((table + (2, 0, "y")).colAsSeq(1) == Seq(Some(1), Some(11), None))
+      }
+
+      def `is empty` = {
         assert(!table.isRowEmpty(0))
         assert(!table.isRowEmpty(1))
         assert(table.isRowEmpty(2))
@@ -280,10 +300,6 @@ class IndexedSeqTableSpec extends Spec {
         assert(!table.isColEmpty(2))
         assert(table.isColEmpty(3))
         assert(table.isColEmpty(100500))
-        assert((table + (0, 3, "x")).row(0) == SeqOfSome(0, 1, 2, "x"))
-        assert((table + (0, 3, "x")).row(1) == Seq(Some(10), Some(11), Some(12), None))
-        assert((table + (2, 0, "y")).col(0) == SeqOfSome(0, 10, "y"))
-        assert((table + (2, 0, "y")).col(1) == Seq(Some(1), Some(11), None))
       }
 
       def `removal ` = {
@@ -306,7 +322,29 @@ class IndexedSeqTableSpec extends Spec {
         assert(table.withoutCol(4) == table)
       }
 
-      def `replace row` = {
+      def `replace row (map)` = {
+        assert(table.withRow(0, SeqOfSome("x", "y", "z").toDefinedMap) == IST.fromRows(Seq(
+          SeqOfSome("x", "y", "z"),
+          SeqOfSome(10, 11, 12)
+        )))
+        assert(table.withRow(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) == IST.fromRows(Seq(
+          SeqOfSome("x", "y", "z", "!"),
+          SeqOfSome(10, 11, 12)
+        )))
+        assert(table
+          .withRow(0, SeqOfSome("x", "y").toDefinedMap)
+          .withRow(1, SeqOfSome("z", "!").toDefinedMap)
+          == IST.fromRows(Seq(
+            SeqOfSome("x", "y"),
+            SeqOfSome("z", "!")
+          )))
+        assert(table.withRow(0, ISeq(Some("x"), Some("y"), Some("z")).toDefinedMap) == IST.fromRows(Seq(
+          Seq(Some("x"), Some("y"), Some("z")),
+          Seq(Some(10), Some(11), Some(12))
+        )))
+      }
+
+      def `replace row (seq)` = {
         assert(table.withRow(0, SeqOfSome("x", "y", "z")) == IST.fromRows(Seq(
           SeqOfSome("x", "y", "z"),
           SeqOfSome(10, 11, 12)
@@ -328,7 +366,30 @@ class IndexedSeqTableSpec extends Spec {
         )))
       }
 
-      def `replace col` = {
+      def `replace col (map)` = {
+        assert(table.withCol(0, SeqOfSome("x", "y").toDefinedMap) == IST.fromValues(Seq(
+          Seq("x", 1, 2),
+          Seq("y", 11, 12)
+        )))
+        assert(table.withCol(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) == IST.fromValues(Seq(
+          Seq("x", 1, 2),
+          Seq("y", 11, 12),
+          Seq("z"),
+          Seq("!")
+        )))
+        assert(table.withCol(4, SeqOfSome("x", "y").toDefinedMap)
+          == IST.fromRows(Seq(
+            Seq(Some(0), Some(1), Some(2), None, Some("x")),
+            Seq(Some(10), Some(11), Some(12), None, Some("y"))
+          )))
+        assert(table.withCol(4, ISeq(Some("x"), Some("y"), None, None, None).toDefinedMap)
+          == IST.fromRows(Seq(
+            Seq(Some(0), Some(1), Some(2), None, Some("x")),
+            Seq(Some(10), Some(11), Some(12), None, Some("y"))
+          )))
+      }
+
+      def `replace col (seq)` = {
         assert(table.withCol(0, SeqOfSome("x", "y")) == IST.fromValues(Seq(
           Seq("x", 1, 2),
           Seq("y", 11, 12)
