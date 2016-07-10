@@ -17,22 +17,54 @@ class IndexedSeqTableSpec extends Spec {
     val table = IST.empty[Int]
     assert(table.isEmpty)
     assert(table.sizes == (0, 0))
+    assert(table.count == 0)
     assert(table.isDefinedAt(0, 0) == false)
     assert(table.isDefinedAt((0, 0)) == false)
+    assert(table.isDefinedAt(-1, -1) == false)
     assert(table.get(0, 0) == None)
     assert(table.get((0, 0)) == None)
-    intercept[IOOBEx]{
-      table(0, 0)
-    }
-    intercept[IOOBEx]{
-      table((0, 0))
-    }
-    intercept[IOOBEx]{
-      table(-1, -1)
-    }
-    intercept[IOOBEx]{
-      table.get(-1, -1)
-    }
+    assert(table.get(-1, -1) == None)
+    intercept[IOOBEx]{ table(0, 0) }
+    intercept[IOOBEx]{ table((0, 0)) }
+    intercept[IOOBEx]{ table(-1, -1) }
+    assert(table.row(0) == Map.empty)
+    assert(table.col(0) == Map.empty)
+    intercept[IOOBEx]{ table.rowAsSeq(0) }
+    intercept[IOOBEx]{ table.colAsSeq(0) }
+    assert(table.row(-1) == Map.empty)
+    assert(table.col(-1) == Map.empty)
+    intercept[IOOBEx]{ table.rowAsSeq(-1) }
+    intercept[IOOBEx]{ table.colAsSeq(-1) }
+  }
+
+  def `empty untrimmed table` = {
+    val table = IST.fromRows[Int](
+      Seq(
+        Seq(None, None),
+        Seq(None, None),
+        Seq(None, None)
+      )
+    )
+    assert(table.isEmpty)
+    assert(table.sizes == (3, 2))
+    assert(table.count == 0)
+    assert(table.isDefinedAt(0, 0) == false)
+    assert(table.isDefinedAt((0, 0)) == false)
+    assert(table.isDefinedAt(-1, -1) == false)
+    assert(table.get(0, 0) == None)
+    assert(table.get((0, 0)) == None)
+    assert(table.get(-1, -1) == None)
+    intercept[IOOBEx]{ table(0, 0) }
+    intercept[IOOBEx]{ table((0, 0)) }
+    intercept[IOOBEx]{ table(-1, -1) }
+    assert(table.row(0) == Map.empty)
+    assert(table.col(0) == Map.empty)
+    assert(table.rowAsSeq(0) == Seq(None, None))
+    assert(table.colAsSeq(0) == Seq(None, None, None))
+    assert(table.row(-1) == Map.empty)
+    assert(table.col(-1) == Map.empty)
+    intercept[IOOBEx]{ table.rowAsSeq(-1) }
+    intercept[IOOBEx]{ table.colAsSeq(-1) }
   }
 
   object `construction from rows and values - ` {
@@ -229,6 +261,18 @@ class IndexedSeqTableSpec extends Spec {
     }
 
     object `collection methods -` {
+      def `contains ` = {
+        assert(table.contains(0))
+        assert(table.contains(1))
+        assert(table.contains(2))
+        assert(table.contains(10))
+        assert(table.contains(11))
+        assert(table.contains(12))
+        assert(!table.contains(9))
+        assert(!table.contains(13))
+        assert(!table.contains(-1))
+      }
+
       def `foreach ` = {
         var seq = Seq.empty[Int]
         table.foreach(v => seq = seq :+ v)

@@ -43,11 +43,15 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   def sizes: (Int, Int)
 
   /** Number of elements in the table */
-  def count: Int = {
+  def count: Int =
     elements.size
-  }
 
-  def isEmpty: Boolean
+  /**
+   * Whether this table contains no elements.
+   * Note that non-trimmed table might still have non-zero row and column count.
+   */
+  def isEmpty: Boolean =
+    count == 0
 
   def isRowEmpty(r: RKT): Boolean
 
@@ -57,34 +61,34 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   // Retrieve
   //
 
-  /** Get element by index, throwing IOOBE if it's missing */
+  /** Get element by key pair, throwing IOOBE if it's missing */
   override final def apply(rc: (RKT, CKT)): A = {
     apply(rc._1, rc._2)
   }
 
-  /** Get element by index, throwing IOOBE if it's missing */
+  /** Get element by keys, throwing IOOBE if it's missing */
   def apply(r: RKT, c: CKT): A = {
     get(r, c).getOrElse {
       throw new IndexOutOfBoundsException(s"No element at (${(r, c)})")
     }
   }
 
-  /** @return whether or not element with given index can be obtained from this table */
+  /** @return whether or not element with given key pair can be obtained from this table */
   override final def isDefinedAt(rc: (RKT, CKT)): Boolean = {
     isDefinedAt(rc._1, rc._2)
   }
 
-  /** @return whether or not element with given index can be obtained from this table */
+  /** @return whether or not element with given keys can be obtained from this table */
   def isDefinedAt(r: RKT, c: CKT): Boolean = {
     get(r, c).isDefined
   }
 
-  /** Attempts to get an element by its index, throws IOOBE if some index is negative */
+  /** Attempts to get an element by its key pair */
   final def get(rc: (RKT, CKT)): Option[A] = {
     get(rc._1, rc._2)
   }
 
-  /** Attempts to get an element by its index, throws IOOBE if some index is negative */
+  /** Attempts to get an element by its keys */
   def get(r: RKT, c: CKT): Option[A]
 
   def rowKeys: IndexedSeq[RKT]
@@ -122,13 +126,13 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   // Retrieve index
   //
 
-  /** @return first index of a given element if any, iterated by rows */
-  def indexOptionOf[B >: A](v: B): Option[(RKT, CKT)] = {
-    indexOptionWhere(_ == v)
+  /** @return first key pair of a given element if any, iterated by rows */
+  def keyOptionOf[B >: A](v: B): Option[(RKT, CKT)] = {
+    keyOptionWhere(_ == v)
   }
 
-  /** @return first index of an element matching given predicate if any, iterated by rows */
-  def indexOptionWhere(predicate: A => Boolean): Option[(RKT, CKT)] = {
+  /** @return first key pair of an element matching given predicate if any, iterated by rows */
+  def keyOptionWhere(predicate: A => Boolean): Option[(RKT, CKT)] = {
     elementsWithIndices find (tuple =>
       predicate(tuple._3)
     ) map (tuple =>
@@ -191,13 +195,17 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   // Helpers
   //
 
-  def emptyRow: RowType[A]
+  protected def emptyRow: RowType[A] =
+    Map.empty
 
-  def emptyCol: ColType[A]
+  protected def emptyCol: ColType[A] =
+    Map.empty
 
   //
   // Collection methods
   //
+
+  def contains[B >: A](el: B): Boolean
 
   def filter(f: A => Boolean): SelfType[A]
 

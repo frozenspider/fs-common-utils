@@ -1,5 +1,7 @@
 package org.fs.utility.collection.table
 
+import org.fs.utility.Implicits._
+
 /**
  * Indexed table is an immutable two-dimensional sequence
  *
@@ -13,10 +15,30 @@ trait IndexedTable[+A]
     r >= 0 && c >= 0 && super.isDefinedAt(r, c)
   }
 
-  /** @return row with the given key, represented as sequence with None in place of missing elements */
+  override def row(r: Int): Map[Int, A] = {
+    if (r < 0 || r >= sizes._1)
+      Map.empty
+    else
+      rowAsSeq(r).toDefinedMap
+  }
+
+  override def col(c: Int): Map[Int, A] = {
+    if (c < 0 || c >= sizes._2)
+      Map.empty
+    else
+      colAsSeq(c).toDefinedMap
+  }
+
+  /**
+   * @return row with the given key, represented as sequence with None in place of missing elements
+   * @throws IndexOutOfBoundsException if r is negative or is greater than rows count
+   */
   def rowAsSeq(r: Int): IndexedSeq[Option[A]]
 
-  /** @return column with the given key, represented as map from row keys to values */
+  /**
+   * @return column with the given key, represented as map from row keys to values
+   * @throws IndexOutOfBoundsException if c is negative or is greater than columns count
+   */
   def colAsSeq(c: Int): IndexedSeq[Option[A]]
 
   /** Adds/replaces the sequence-bassed row in the table. Empty trailing elements are NOT trimmed. */
@@ -28,12 +50,6 @@ trait IndexedTable[+A]
   override def rowKeys: Range = 0 until sizes._1
 
   override def colKeys: Range = 0 until sizes._2
-
-  override def emptyRow: RowType[A] =
-    Map.empty
-
-  override def emptyCol: ColType[A] =
-    Map.empty
 
   //
   // Standard

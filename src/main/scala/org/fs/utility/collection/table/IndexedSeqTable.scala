@@ -11,35 +11,34 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     this(IndexedSeq.empty)
   }
 
-  override lazy val sizes: (Int, Int) =
+  override lazy val sizes: (Int, Int) = {
     (rows.size, (rows.map(_.size) :+ 0).max)
+  }
 
-  override lazy val count: Int =
+  override lazy val count: Int = {
     rows.map(_.count(_.isDefined)).sum
-
-  override lazy val isEmpty: Boolean =
-    rows.isEmpty
+  }
 
   override def isRowEmpty(r: Int): Boolean = {
-    checkBounds(r >= 0, "Index should be non-negative")
     rows.getOrElse(r, IndexedSeq.empty).isEmpty
   }
 
   override def isColEmpty(c: Int): Boolean = {
-    checkBounds(c >= 0, "Index should be non-negative")
-    rows.forall(_.getFlat(c).isEmpty)
+    if (c < 0) true
+    else rows.forall(_.getFlat(c).isEmpty)
   }
 
   override def get(r: Int, c: Int): Option[A] = {
-    checkBounds(r >= 0 && c >= 0, s"Indices should be non-negative, were ${(r, c)}")
-    for {
+    if (r < 0 || c < 0) None
+    else for {
       row <- rows.get(r)
       cell <- row.getFlat(c)
     } yield cell
   }
 
-  override def +[B >: A](r: Int, c: Int, v: B): IndexedSeqTable[B] =
+  override def +[B >: A](r: Int, c: Int, v: B): IndexedSeqTable[B] = {
     withValueOptionAt(r, c, Some(v))
+  }
 
   override def ++[B >: A, ST[+A2] <: GenTableLike[Int, Int, A2, ST, TT], TT[+A2] <: GenTableLike[Int, Int, A2, TT, ST]](that: GenTableLike[Int, Int, B, ST, TT]): IndexedSeqTable[B] = {
     val thatRowCount = that.sizes._1
@@ -61,39 +60,33 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
   }
 
   override def -(r: Int, c: Int): IndexedSeqTable[A] = {
-    checkBounds(r >= 0 && c >= 0, s"Indices should be non-negative, were ${(r, c)}")
+    checkBounds(r >= 0 && c >= 0, s"Indices should be non-negative")
     if (r >= sizes._1 && c >= sizes._2) this
     else withValueOptionAt(r, c, None)
   }
 
-  def row(r: Int): Map[Int, A] =
-    rowAsSeq(r).toDefinedMap
-
-  def col(c: Int): Map[Int, A] =
-    colAsSeq(c).toDefinedMap
-
   override def rowAsSeq(r: Int): IndexedSeq[Option[A]] = {
     checkBounds(r >= 0, "Index should be non-negative")
-    checkBounds(r < sizes._1, "Index is too big")
+    checkBounds(r < sizes._1, "Index should less than row count")
     rows(r) padTo (sizes._2, None)
   }
 
   override def colAsSeq(c: Int): IndexedSeq[Option[A]] = {
     checkBounds(c >= 0, "Index should be non-negative")
-    checkBounds(c < sizes._2, "Index is too big")
+    checkBounds(c < sizes._2, "Index should less than column count")
     rows map (_.getFlat(c)) padTo (sizes._1, None)
   }
 
   override def swapRows(r1: Int, r2: Int): IndexedSeqTable[A] = {
     checkBounds(r1 >= 0 && r2 >= 0, "Indices should be non-negative")
-    checkBounds(r1 < sizes._1 && r2 < sizes._1, "Index is too big")
+    checkBounds(r1 < sizes._1 && r2 < sizes._1, "Indices should less than row count")
     val newRows = rows.updated(r1, rows(r2)).updated(r2, rows(r1))
     new IndexedSeqTable(newRows)
   }
 
   override def swapCols(c1: Int, c2: Int): IndexedSeqTable[A] = {
     checkBounds(c1 >= 0 && c2 >= 0, "Indices should be non-negative")
-    checkBounds(c1 < sizes._2 && c2 < sizes._2, "Index is too big")
+    checkBounds(c1 < sizes._2 && c2 < sizes._2, "Indices should less than column count")
     val newRows = rows map (col => {
       val padded = col.padTo((c1 max c2) + 1, None)
       padded.updated(c1, padded(c2)).updated(c2, padded(c1))
@@ -168,6 +161,10 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
   // Collection methods
   //
 
+  override def contains[B >: A](el: B): Boolean = {
+    rows.exists(_.contains(Some(el)))
+  }
+
   override def filter(f: A => Boolean): IndexedSeqTable[A] = {
     val newRows = rows map (_ map {
       case Some(v) if f(v) => Some(v)
@@ -194,7 +191,7 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
   }
 
   private def withValueOptionAt[B >: A](r: Int, c: Int, v: Option[B]): IndexedSeqTable[B] = {
-    checkBounds(r >= 0 && c >= 0, s"Indices should be non-negative, were ${(r, c)}")
+    checkBounds(r >= 0 && c >= 0, s"Indices should be non-negative")
     val row = rows.getOrElse(r, Seq.empty)
     val newRows = rows padTo (r + 1, IndexedSeq.empty) updated (r,
       (row padTo (c + 1, None) updated (c, v)).toIndexedSeq

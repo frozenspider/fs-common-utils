@@ -45,7 +45,7 @@ object Implicits {
   /** IndexedSeqLike[X] enriched with some of most general support methods */
   implicit class RichIndexedSeqLike[A, Repr](is: IndexedSeqLike[A, Repr]) {
     def get(i: Int): Option[A] = {
-      if (is.length <= i) None
+      if (i < 0 || is.length <= i) None
       else Some(is(i))
     }
 
