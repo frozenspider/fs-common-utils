@@ -123,24 +123,6 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   def elementsWithIndices: Seq[(RKT, CKT, A)]
 
   //
-  // Retrieve index
-  //
-
-  /** @return first key pair of a given element if any, iterated by rows */
-  def keyOptionOf[B >: A](v: B): Option[(RKT, CKT)] = {
-    keyOptionWhere(_ == v)
-  }
-
-  /** @return first key pair of an element matching given predicate if any, iterated by rows */
-  def keyOptionWhere(predicate: A => Boolean): Option[(RKT, CKT)] = {
-    elementsWithIndices find (tuple =>
-      predicate(tuple._3)
-    ) map (tuple =>
-      (tuple._1, tuple._2)
-    )
-  }
-
-  //
   // Copy-update
   //
 
@@ -172,15 +154,13 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   def sortRowsBy[B](f: RKT => B)(implicit ord: Ordering[B]): SelfType[A] = {
     def swap(t: SelfType[A], k1: RKT, k2: RKT): SelfType[A] =
       t.swapRows(k1, k2)
-    val result = GenTableLike.sortLinesBy[RKT, CKT, A, SelfType, TransposedType, RKT, B](self, rowKeys, swap _, f)
-    result
+    GenTableLike.sortLinesBy[RKT, CKT, A, SelfType, TransposedType, RKT, B](self, rowKeys, swap _, f)
   }
 
   def sortColsBy[B](f: CKT => B)(implicit ord: Ordering[B]): SelfType[A] = {
     def swap(t: SelfType[A], k1: CKT, k2: CKT): SelfType[A] =
       t.swapCols(k1, k2)
-    val result = GenTableLike.sortLinesBy[RKT, CKT, A, SelfType, TransposedType, CKT, B](self, colKeys, swap _, f)
-    result
+    GenTableLike.sortLinesBy[RKT, CKT, A, SelfType, TransposedType, CKT, B](self, colKeys, swap _, f)
   }
 
   def withoutRow(r: RKT): SelfType[A]
@@ -188,8 +168,6 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   def withoutCol(c: CKT): SelfType[A]
 
   def transpose: TransposedType[A]
-
-  def trim: SelfType[A]
 
   //
   // Helpers
@@ -205,12 +183,23 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   // Collection methods
   //
 
+  /** @return first cell (element with indices) matching given predicate if any exists, iterated by rows */
+  def findCell(predicate: A => Boolean): Option[(RKT, CKT, A)] = {
+    elementsWithIndices find (tuple =>
+      predicate(tuple._3)
+    )
+  }
+
+  /** @return first element matching given predicate if any exists, iterated by rows */
+  def find(predicate: A => Boolean): Option[A] =
+    findCell(predicate) map (_._3)
+
   def contains[B >: A](el: B): Boolean
 
   def filter(f: A => Boolean): SelfType[A]
 
   def foreach(f: A => Unit): Unit =
-    elements foreach f
+    elements.foreach(f)
 
   def map[B](f: A => B): SelfType[B] =
     mapWithIndex((_, _, v) => f(v))

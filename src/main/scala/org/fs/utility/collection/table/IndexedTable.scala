@@ -51,6 +51,9 @@ trait IndexedTable[+A]
 
   override def colKeys: Range = 0 until sizes._2
 
+  /** @return this table without trailing empty rows/column */
+  def trim: IndexedTable[A]
+
   //
   // Standard
   //
