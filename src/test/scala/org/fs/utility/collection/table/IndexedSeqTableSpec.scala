@@ -7,7 +7,7 @@ import org.fs.utility.Implicits._
 
 @RunWith(classOf[JUnitRunner])
 class IndexedSeqTableSpec extends Spec {
-  type IOOBEx = IndexOutOfBoundsException
+  type IAEx = IllegalArgumentException
 
   val IST = IndexedSeqTable
 
@@ -24,17 +24,17 @@ class IndexedSeqTableSpec extends Spec {
     assert(table.get(0, 0) == None)
     assert(table.get((0, 0)) == None)
     assert(table.get(-1, -1) == None)
-    intercept[IOOBEx]{ table(0, 0) }
-    intercept[IOOBEx]{ table((0, 0)) }
-    intercept[IOOBEx]{ table(-1, -1) }
+    intercept[IAEx]{ table(0, 0) }
+    intercept[IAEx]{ table((0, 0)) }
+    intercept[IAEx]{ table(-1, -1) }
     assert(table.row(0) == Map.empty)
     assert(table.col(0) == Map.empty)
-    intercept[IOOBEx]{ table.rowAsSeq(0) }
-    intercept[IOOBEx]{ table.colAsSeq(0) }
+    assert(table.rowAsSeq(0) == IndexedSeq.empty)
+    assert(table.colAsSeq(0) == IndexedSeq.empty)
     assert(table.row(-1) == Map.empty)
     assert(table.col(-1) == Map.empty)
-    intercept[IOOBEx]{ table.rowAsSeq(-1) }
-    intercept[IOOBEx]{ table.colAsSeq(-1) }
+    assert(table.rowAsSeq(-1) == IndexedSeq.empty)
+    assert(table.colAsSeq(-1) == IndexedSeq.empty)
   }
 
   def `empty untrimmed table` = {
@@ -54,17 +54,17 @@ class IndexedSeqTableSpec extends Spec {
     assert(table.get(0, 0) == None)
     assert(table.get((0, 0)) == None)
     assert(table.get(-1, -1) == None)
-    intercept[IOOBEx]{ table(0, 0) }
-    intercept[IOOBEx]{ table((0, 0)) }
-    intercept[IOOBEx]{ table(-1, -1) }
+    intercept[IAEx]{ table(0, 0) }
+    intercept[IAEx]{ table((0, 0)) }
+    intercept[IAEx]{ table(-1, -1) }
     assert(table.row(0) == Map.empty)
     assert(table.col(0) == Map.empty)
     assert(table.rowAsSeq(0) == Seq(None, None))
     assert(table.colAsSeq(0) == Seq(None, None, None))
     assert(table.row(-1) == Map.empty)
     assert(table.col(-1) == Map.empty)
-    intercept[IOOBEx]{ table.rowAsSeq(-1) }
-    intercept[IOOBEx]{ table.colAsSeq(-1) }
+    assert(table.rowAsSeq(-1) == IndexedSeq.empty)
+    assert(table.colAsSeq(-1) == IndexedSeq.empty)
   }
 
   object `construction from rows and values - ` {
@@ -121,10 +121,10 @@ class IndexedSeqTableSpec extends Spec {
       }
       assert(table.get(0, 3) == None)
       assert(table.get(2, 0) == None)
-      intercept[IOOBEx]{
+      intercept[IAEx]{
         table(0, 3)
       }
-      intercept[IOOBEx]{
+      intercept[IAEx]{
         table(2, 0)
       }
     }
@@ -478,10 +478,10 @@ class IndexedSeqTableSpec extends Spec {
           SeqOfSome(2, 1, 0),
           SeqOfSome(12, 11, 10)
         )))
-        intercept[IOOBEx] {
+        intercept[IAEx] {
           table.swapRows(0, 2)
         }
-        intercept[IOOBEx] {
+        intercept[IAEx] {
           table.swapCols(0, 3)
         }
       }

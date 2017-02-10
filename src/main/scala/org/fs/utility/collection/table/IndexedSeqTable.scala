@@ -29,13 +29,14 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
   }
 
   override def get(r: Int, c: Int): Option[A] = {
-    if (r < 0 || c < 0) None
+    if (r < 0 || c < 0 || r >= sizes._1 || c >= sizes._2) None
     else for {
       row <- rows.get(r)
       cell <- row.getFlat(c)
     } yield cell
   }
 
+  @throws[IllegalArgumentException]("if indices were negative")
   override def +[B >: A](r: Int, c: Int, v: B): IndexedSeqTable[B] = {
     withValueOptionAt(r, c, Some(v))
   }
@@ -59,23 +60,24 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     fromRows(rows2)
   }
 
+  @throws[IllegalArgumentException]("if indices were negative")
   override def -(r: Int, c: Int): IndexedSeqTable[A] = {
     checkBounds(r >= 0 && c >= 0, s"Indices should be non-negative")
     if (r >= sizes._1 && c >= sizes._2) this
     else withValueOptionAt(r, c, None)
   }
 
-  override def rowAsSeq(r: Int): IndexedSeq[Option[A]] = {
-    checkBounds(r >= 0, "Index should be non-negative")
-    checkBounds(r < sizes._1, "Index should less than row count")
-    rows(r) padTo (sizes._2, None)
-  }
+  override def rowAsSeq(r: Int): IndexedSeq[Option[A]] =
+    if (r < 0 || r >= sizes._1)
+      IndexedSeq.empty
+    else
+      rows(r) padTo (sizes._2, None)
 
-  override def colAsSeq(c: Int): IndexedSeq[Option[A]] = {
-    checkBounds(c >= 0, "Index should be non-negative")
-    checkBounds(c < sizes._2, "Index should less than column count")
-    rows map (_.getFlat(c)) padTo (sizes._1, None)
-  }
+  override def colAsSeq(c: Int): IndexedSeq[Option[A]] =
+    if (c < 0 || c >= sizes._2)
+      IndexedSeq.empty
+    else
+      rows map (_.getFlat(c)) padTo (sizes._1, None)
 
   override def swapRows(r1: Int, r2: Int): IndexedSeqTable[A] = {
     checkBounds(r1 >= 0 && r2 >= 0, "Indices should be non-negative")
@@ -94,12 +96,14 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     new IndexedSeqTable(newRows)
   }
 
+  @throws[IllegalArgumentException]("if the index was negative")
   override def withoutRow(r: Int): IndexedSeqTable[A] = {
     checkBounds(r >= 0, "Index should be non-negative")
     val newRows = rows.take(r) ++ rows.drop(r + 1)
     new IndexedSeqTable(newRows)
   }
 
+  @throws[IllegalArgumentException]("if the index was negative")
   override def withoutCol(c: Int): IndexedSeqTable[A] = {
     checkBounds(c >= 0, "Index should be non-negative")
     val newRows = rows map (row =>
@@ -108,6 +112,7 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     new IndexedSeqTable(newRows)
   }
 
+  @throws[IllegalArgumentException]("if the index was negative")
   def withRow[B >: A](r: Int, row: Map[Int, B]): IndexedSeqTable[B] = {
     checkBounds(r >= 0, "Index should be non-negative")
     val emptyRow = IndexedSeq.fill[Option[B]](row.keys.max + 1)(None)
@@ -117,6 +122,7 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     withRow(r, newRow)
   }
 
+  @throws[IllegalArgumentException]("if the index was negative")
   def withCol[B >: A](c: Int, col: Map[Int, B]): IndexedSeqTable[B] = {
     checkBounds(c >= 0, "Index should be non-negative")
     val emptyCol = IndexedSeq.fill[Option[B]](col.keys.max + 1)(None)
@@ -126,12 +132,14 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     withCol(c, newCol)
   }
 
+  @throws[IllegalArgumentException]("if the index was negative")
   override def withRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedSeqTable[B] = {
     checkBounds(r >= 0, "Index should be non-negative")
     val newRows = rows.padTo(r + 1, IndexedSeq.empty).updated(r, row)
     new IndexedSeqTable(newRows)
   }
 
+  @throws[IllegalArgumentException]("if the index was negative")
   override def withCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedSeqTable[B] = {
     checkBounds(c >= 0, "Index should be non-negative")
     val newRows = rows zipAll (col, IndexedSeq.empty, None) map {
@@ -162,7 +170,7 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
   //
 
   override def contains[B >: A](el: B): Boolean = {
-    rows.exists(_.contains(Some(el)))
+    rows exists (_ contains Some(el))
   }
 
   override def filter(f: A => Boolean): IndexedSeqTable[A] = {
@@ -186,10 +194,12 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
   // Helper methods
   //
 
+  @throws[IllegalArgumentException]("if indices were negative")
   private def checkBounds(cond: Boolean, text: => Any): Unit = {
-    if (!cond) throw new IndexOutOfBoundsException(text.toString)
+    if (!cond) throw new IllegalArgumentException(text.toString)
   }
 
+  @throws[IllegalArgumentException]("if indices were negative")
   private def withValueOptionAt[B >: A](r: Int, c: Int, v: Option[B]): IndexedSeqTable[B] = {
     checkBounds(r >= 0 && c >= 0, s"Indices should be non-negative")
     val row = rows.getOrElse(r, Seq.empty)

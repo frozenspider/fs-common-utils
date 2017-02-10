@@ -1,7 +1,7 @@
 package org.fs.utility.collection.table
 
 /**
- * Base trait for table-like structures are two-dimensional sequences/maps.
+ * Base trait for immutable table-like structures are two-dimensional sequences/maps.
  * Table structure can be represented as following:
  *
  * <pre>
@@ -43,7 +43,7 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   def sizes: (Int, Int)
 
   /** Number of elements in the table */
-  def count: Int =
+  lazy val count: Int =
     elements.size
 
   /**
@@ -53,23 +53,25 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   def isEmpty: Boolean =
     count == 0
 
+  /** Whether or not given row is empty or absent */
   def isRowEmpty(r: RKT): Boolean
 
+  /** Whether or not given column is empty or absent */
   def isColEmpty(c: CKT): Boolean
 
   //
   // Retrieve
   //
 
-  /** Get element by key pair, throwing IOOBE if it's missing */
+  /** Get element by key pair, throwing IllegalArgumentException if it's missing */
   override final def apply(rc: (RKT, CKT)): A = {
     apply(rc._1, rc._2)
   }
 
-  /** Get element by keys, throwing IOOBE if it's missing */
+  /** Get element by keys, throwing IllegalArgumentException if it's missing */
   def apply(r: RKT, c: CKT): A = {
     get(r, c).getOrElse {
-      throw new IndexOutOfBoundsException(s"No element at (${(r, c)})")
+      throw new IllegalArgumentException(s"No element at (${(r, c)})")
     }
   }
 
@@ -95,10 +97,10 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
 
   def colKeys: IndexedSeq[CKT]
 
-  /** @return row with the given key, elements in which is corresponds to column values */
+  /** @return row of defined elements with the given key */
   def row(r: RKT): RowType[A]
 
-  /** @return column with the given key, elements in which is corresponds to row values */
+  /** @return column of defined elements with the given key */
   def col(c: CKT): ColType[A]
 
   /** Adds/replaces the given row in the table. This might increase row count by more than 1 depending on table implementation. */
@@ -147,10 +149,15 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   /** @return table without value at a given position (NOT dropping empty rows/columns) */
   def -(r: RKT, c: CKT): SelfType[A]
 
+  /** Swaps the given rows, both of which should be defined */
+  @throws[IllegalArgumentException]("if any index were undefined")
   def swapRows(r1: RKT, r2: RKT): SelfType[A]
 
+  /** Swaps the given columns, both of which should be defined */
+  @throws[IllegalArgumentException]("if any index were undefined")
   def swapCols(c1: CKT, c2: CKT): SelfType[A]
 
+  /** */
   def sortRowsBy[B](f: RKT => B)(implicit ord: Ordering[B]): SelfType[A] = {
     def swap(t: SelfType[A], k1: RKT, k2: RKT): SelfType[A] =
       t.swapRows(k1, k2)
@@ -163,8 +170,10 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
     GenTableLike.sortLinesBy[RKT, CKT, A, SelfType, TransposedType, CKT, B](self, colKeys, swap _, f)
   }
 
+  /** @return table without the given row, whether it was present or not */
   def withoutRow(r: RKT): SelfType[A]
 
+  /** @return table without the given column, whether it was present or not */
   def withoutCol(c: CKT): SelfType[A]
 
   def transpose: TransposedType[A]
