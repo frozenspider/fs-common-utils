@@ -9,6 +9,11 @@ class MapKeyTable[RKT, CKT, +A] private (
   override val colKeys: IndexedSeq[CKT])
     extends KeyTable[RKT, CKT, A]
     with GenTableLike[RKT, CKT, A, Curried[RKT, CKT]#Self, Curried[CKT, RKT]#Self] {
+  import MapKeyTable.asListMap
+
+  //
+  // Retrieve
+  //
 
   override lazy val sizes: (Int, Int) =
     (rowKeys.size, colKeys.size)
@@ -20,13 +25,22 @@ class MapKeyTable[RKT, CKT, +A] private (
     rows.get(r) map (_.isEmpty) getOrElse true
 
   override def isColEmpty(c: CKT): Boolean = {
-    rows exists {
-      case (_, row) => row contains c
+    rows forall {
+      case (_, row) => !(row contains c)
     }
   }
 
+  override def isDefinedAt(r: RKT, c: CKT): Boolean =
+    rows.contains(r) && rows(r).contains(c)
+
+  override def get(r: RKT, c: CKT): Option[A] =
+    for {
+      row <- rows.get(r)
+      el <- row.get(c)
+    } yield el
+
   override def row(r: RKT): ListMap[CKT, A] = {
-    val row = rows.get(r) getOrElse ListMap.empty
+    val row = rows.get(r) getOrElse emptyRow
     colKeys.collect {
       case c if row contains c => (c -> row(c))
     }
@@ -43,7 +57,7 @@ class MapKeyTable[RKT, CKT, +A] private (
 
   override def withRow[B >: A](r: RKT, row: Map[CKT, B]): MapKeyTable[RKT, CKT, B] = {
     val rows2 = rows + (r -> row)
-    new MapKeyTable(rows2, (rowKeys :+ r).distinct, colKeys)
+    new MapKeyTable(rows2, (rowKeys :+ r).distinct, (colKeys ++ row.keySet).distinct)
   }
 
   override def withCol[B >: A](c: CKT, col: Map[RKT, B]): MapKeyTable[RKT, CKT, B] = {
@@ -54,17 +68,22 @@ class MapKeyTable[RKT, CKT, +A] private (
       case (r, row)                   => (r, row - c)
     }
     val rows2 = updatedRows ++ newRows
-    new MapKeyTable(rows2, rowKeys, (colKeys :+ c).distinct)
+    new MapKeyTable(rows2, (rowKeys ++ col.keySet).distinct, (colKeys :+ c).distinct)
   }
 
-  override def isDefinedAt(r: RKT, c: CKT): Boolean =
-    rows.contains(r) && rows(r).contains(c)
+  override def withoutRow(r: RKT): MapKeyTable[RKT, CKT, A] =
+    if (rowKeys contains r)
+      new MapKeyTable(rows - r, rowKeys filter (_ != r), colKeys)
+    else
+      this
 
-  override def get(r: RKT, c: CKT): Option[A] =
-    for {
-      row <- rows.get(r)
-      el <- row.get(c)
-    } yield el
+  override def withoutCol(c: CKT): MapKeyTable[RKT, CKT, A] =
+    if (colKeys contains c) {
+      val rows2 = rows mapValues (row => row - c)
+      new MapKeyTable(rows2, rowKeys, colKeys filter (_ != c))
+    } else {
+      this
+    }
 
   override def elementsWithIndices: Seq[(RKT, CKT, A)] =
     for {
@@ -73,8 +92,12 @@ class MapKeyTable[RKT, CKT, +A] private (
       c <- colKeys if row contains c
     } yield (r, c, row(c))
 
+  //
+  // Copy-update
+  //
+
   override def +[B >: A](r: RKT, c: CKT, v: B): MapKeyTable[RKT, CKT, B] = {
-    val rows2 = rows + (r -> (rows.getOrElse(r, ListMap.empty) + (c -> v)))
+    val rows2 = rows + (r -> (rows.getOrElse(r, emptyRow) + (c -> v)))
     new MapKeyTable(rows2, (rowKeys :+ r).distinct, (colKeys :+ c).distinct)
   }
 
@@ -105,6 +128,24 @@ class MapKeyTable[RKT, CKT, +A] private (
       this
     }
 
+  override def transpose: MapKeyTable[CKT, RKT, A] = {
+    val emptyTransposedMap: ListMap[CKT, ListMap[RKT, A]] = ListMap.empty
+    val cols = elementsWithIndices.foldLeft(emptyTransposedMap) {
+      case (map, (r, c, el)) =>
+        val col = map.getOrElse(c, emptyCol) + (r -> el)
+        map + (c -> col)
+    }
+    new MapKeyTable(cols, colKeys, rowKeys)
+  }
+
+  override def swapRows(r1: RKT, r2: RKT): MapKeyTable[RKT, CKT, A] = {
+    require(rowKeys.contains(r1) && rowKeys.contains(r2), "Both keys should be defined")
+    val row1 = rows.getOrElse(r1, emptyRow)
+    val row2 = rows.getOrElse(r2, emptyRow)
+    val rows2 = rows.updated(r1, row2).updated(r2, row1)
+    new MapKeyTable(rows2, rowKeys, colKeys)
+  }
+
   override def swapCols(c1: CKT, c2: CKT): MapKeyTable[RKT, CKT, A] = {
     require(colKeys.contains(c1) && colKeys.contains(c2), "Both keys should be defined")
     val rows2 = rows map {
@@ -118,36 +159,20 @@ class MapKeyTable[RKT, CKT, +A] private (
     new MapKeyTable(rows2, rowKeys, colKeys)
   }
 
-  override def swapRows(r1: RKT, r2: RKT): MapKeyTable[RKT, CKT, A] = {
+  override def switchRows(r1: RKT, r2: RKT): MapKeyTable[RKT, CKT, A] = {
     require(rowKeys.contains(r1) && rowKeys.contains(r2), "Both keys should be defined")
-    val row1 = rows.getOrElse(r1, emptyRow)
-    val row2 = rows.getOrElse(r2, emptyRow)
-    val rows2 = rows.updated(r1, row2).updated(r2, row1)
-    new MapKeyTable(rows2, rowKeys, colKeys)
+    val rowKeys2 = rowKeys
+      .updated(rowKeys indexOf r1, r2)
+      .updated(rowKeys indexOf r2, r1)
+    new MapKeyTable(rows, rowKeys2, colKeys)
   }
 
-  override def withoutRow(r: RKT): MapKeyTable[RKT, CKT, A] =
-    if (rowKeys contains r)
-      new MapKeyTable(rows - r, rowKeys filter (_ != r), colKeys)
-    else
-      this
-
-  override def withoutCol(c: CKT): MapKeyTable[RKT, CKT, A] =
-    if (colKeys contains c) {
-      val rows2 = rows mapValues (row => row - c)
-      new MapKeyTable(rows2, rowKeys, colKeys filter (_ != c))
-    } else {
-      this
-    }
-
-  override def transpose: MapKeyTable[CKT, RKT, A] = {
-    val emptyTransposedMap: ListMap[CKT, ListMap[RKT, A]] = ListMap.empty
-    val cols = elementsWithIndices.foldLeft(emptyTransposedMap) {
-      case (map, (r, c, el)) =>
-        val row2 = map.getOrElse(c, ListMap.empty) + (r -> el)
-        map + (c -> row2)
-    }
-    new MapKeyTable(cols, colKeys, rowKeys)
+  override def switchCols(c1: CKT, c2: CKT): MapKeyTable[RKT, CKT, A] = {
+    require(colKeys.contains(c1) && colKeys.contains(c2), "Both keys should be defined")
+    val colKeys2 = colKeys
+      .updated(colKeys indexOf c1, c2)
+      .updated(colKeys indexOf c2, c1)
+    new MapKeyTable(rows, rowKeys, colKeys2)
   }
 
   override def trim: MapKeyTable[RKT, CKT, A] = {
@@ -157,6 +182,20 @@ class MapKeyTable[RKT, CKT, +A] private (
     val colKeys2 = colKeys filter (colKeySet.contains)
     new MapKeyTable(rows2, rowKeys2, colKeys2)
   }
+
+  //
+  // Sorting and rearrangement
+  //
+
+  override def sortedRows[B >: RKT](implicit ord: Ordering[B]): KeyTable[RKT, CKT, A] =
+    new MapKeyTable(rows, rowKeys.sorted(ord), colKeys)
+
+  override def sortedCols[B >: CKT](implicit ord: Ordering[B]): KeyTable[RKT, CKT, A] =
+    new MapKeyTable(rows, rowKeys, colKeys.sorted(ord))
+
+  //
+  // Collection methods
+  //
 
   override def contains[B](el: B): Boolean =
     rows exists (_._2 exists (_._2 == el))
@@ -181,19 +220,30 @@ class MapKeyTable[RKT, CKT, +A] private (
   // Helpers
   //
 
-  private implicit def asListMap[A, B](i: Iterable[(A, B)]): ListMap[A, B] =
-    ListMap(i.toSeq: _*)
+  override protected def emptyRow: ListMap[CKT, A] =
+    ListMap.empty
+
+  override protected def emptyCol: ListMap[RKT, A] =
+    ListMap.empty
 }
 
 object MapKeyTable {
-  /** Type helper for defining self-recursive type */
-  private type Curried[RKT, CKT] = {
-    type Self[+A] = MapKeyTable[RKT, CKT, A]
-  }
 
   def empty[RKT, CKT, A]: MapKeyTable[RKT, CKT, A] =
     new MapKeyTable(ListMap.empty, IndexedSeq.empty, IndexedSeq.empty)
 
   def fromRows[RKT, CKT, A](rows: Map[RKT, Map[CKT, A]]): MapKeyTable[RKT, CKT, A] =
     new MapKeyTable(rows, rows.keys.toIndexedSeq, rows.flatMap(_._2.keys).toIndexedSeq.distinct)
+
+  //
+  // Helpers
+  //
+
+  /** Type helper for defining self-recursive type */
+  private type Curried[RKT, CKT] = {
+    type Self[+A] = MapKeyTable[RKT, CKT, A]
+  }
+
+  protected implicit def asListMap[A, B](i: Iterable[(A, B)]): ListMap[A, B] =
+    ListMap(i.toSeq: _*)
 }

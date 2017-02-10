@@ -636,12 +636,13 @@ class IndexedSeqTableSpec extends Spec {
     }
 
     def `swap ` = {
+      assert(table.swapRows(0, 1) == table.swapRows(1, 0))
+      assert(table.swapCols(0, 1) == table.swapCols(1, 0))
       assert(table.swapRows(0, 1) == IST.fromRows(Seq(
         Seq(None, Some(11), None),
         Seq(Some(0), Some(1), None, None),
         Seq(None)
       )))
-      assert(table.swapRows(0, 1) == table.swapRows(1, 0))
       assert(table.swapCols(0, 1) == IST.fromRows(Seq(
         Seq(Some(1), Some(0), None, None),
         Seq(Some(11), None, None),

@@ -5,6 +5,7 @@ import org.scalatest.Spec
 import org.scalatest.junit.JUnitRunner
 import org.fs.utility.Implicits._
 import scala.collection.immutable.ListMap
+import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnitRunner])
 class MapKeyTableSpec extends Spec {
@@ -68,11 +69,11 @@ class MapKeyTableSpec extends Spec {
       )
     }
   }
-  /*
+
   object `2x3 dense table -` {
-    val table = IST.fromRows(Seq(
-      SeqOfSome(0, 1, 2),
-      SeqOfSome(10, 11, 12)
+    val table = intStringMKT[Int](Seq(
+      Seq(0, 1, 2),
+      Seq(10, 11, 12)
     ))
 
     def `size and element getters` = {
@@ -81,166 +82,171 @@ class MapKeyTableSpec extends Spec {
       assert(table.count == 6)
       for {
         r <- 0 to 1
-        c <- 0 to 2
+        ci <- 0 to 2
+        val c = Seq("a", "b", "c")(ci)
       } {
         assert(table.isDefinedAt(r, c))
-        val expectedValue = r * 10 + c
+        val expectedValue = r * 10 + ci
         assert(table(r, c) == expectedValue)
         assert(table.get(r, c) == Some(expectedValue))
       }
-      assert(table.get(0, 3) == None)
-      assert(table.get(2, 0) == None)
+      assert(table.get(0, "d") == None)
+      assert(table.get(2, "a") == None)
       intercept[IAEx]{
-        table(0, 3)
+        table(0, "d")
       }
       intercept[IAEx]{
-        table(2, 0)
+        table(2, "a")
       }
     }
 
     def `elements sequence` = {
       assert(table.elements == Seq(0, 1, 2, 10, 11, 12))
       assert(table.elementsWithIndices == Seq(
-        (0, 0, 0),
-        (0, 1, 1),
-        (0, 2, 2),
-        (1, 0, 10),
-        (1, 1, 11),
-        (1, 2, 12)
+        (0, "a", 0),
+        (0, "b", 1),
+        (0, "c", 2),
+        (1, "a", 10),
+        (1, "b", 11),
+        (1, "c", 12)
       ))
     }
 
     def `transposition ` = {
-      assert(table.transpose == IST.fromRows(Seq(
-        SeqOfSome(0, 10),
-        SeqOfSome(1, 11),
-        SeqOfSome(2, 12)
+      assert(table.transpose == MKT.fromRows[String, Int, Int](LM(
+        "a" -> LM(0 -> 0, 1 -> 10),
+        "b" -> LM(0 -> 1, 1 -> 11),
+        "c" -> LM(0 -> 2, 1 -> 12)
       )))
     }
 
     def `adding/replacing elements` = {
-      val table2 = table + (0, 3, "x")
-      assert(table2 == IST.fromRows(Seq(
-        SeqOfSome(0, 1, 2, "x"),
-        SeqOfSome(10, 11, 12)
+      val table2 = table + (0, "d", "x")
+      assert(table2 == intStringMKT[Any](Seq(
+        Seq(0, 1, 2, "x"),
+        Seq(10, 11, 12)
       )))
       assert(table2.sizes == (2, 4))
 
-      val table3 = table2 + (3, 0, "y")
-      assert(table3 == IST.fromRows(Seq(
-        SeqOfSome(0, 1, 2, "x"),
-        SeqOfSome(10, 11, 12),
-        SeqOfSome(),
-        SeqOfSome("y")
+      val table3 = table2 + (2, "a", "y")
+      assert(table3 == intStringMKT[Any](Seq(
+        Seq(0, 1, 2, "x"),
+        Seq(10, 11, 12),
+        Seq("y")
       )))
-      assert(table3.sizes == (4, 4))
+      assert(table3.sizes == (3, 4))
 
-      val table4 = table3 + (0, 0, "z")
-      assert(table4 == IST.fromRows(Seq(
-        SeqOfSome("z", 1, 2, "x"),
-        SeqOfSome(10, 11, 12),
-        SeqOfSome(),
-        SeqOfSome("y")
+      val table4 = table3 + (0, "a", "z")
+      assert(table4 == intStringMKT[Any](Seq(
+        Seq("z", 1, 2, "x"),
+        Seq(10, 11, 12),
+        Seq("y")
       )))
-      assert(table4.sizes == (4, 4))
+      assert(table4.sizes == (3, 4))
 
-      val table5 = table4 + (2, 2, "!")
-      assert(table5 == IST.fromRows(Seq(
-        SeqOfSome("z", 1, 2, "x"),
-        SeqOfSome(10, 11, 12),
-        Seq(None, None, Some("!")),
-        SeqOfSome("y")
+      val table5 = table4 + (3, "c", "!")
+      assert(table5 == intStringMKT[Any](Seq(
+        Seq("z", 1, 2, "x"),
+        Seq(10, 11, 12),
+        Seq("y"),
+        Seq(null, null, "!")
       )))
       assert(table5.sizes == (4, 4))
     }
 
     def `removing elements` = {
-      val table2 = table - (0, 0)
-      assert(table2 == IST.fromRows(Seq(
-        Seq(None, Some(1), Some(2)),
-        Seq(Some(10), Some(11), Some(12))
+      val table2 = table - (0, "a")
+      assert(table2 == intStringMKT[Int](Seq(
+        Seq(null, 1, 2),
+        Seq(10, 11, 12)
       )))
       assert(table2.sizes == (2, 3))
 
-      val table3 = table2 - (0, 2)
-      assert(table3 == IST.fromRows(Seq(
-        Seq(None, Some(1)),
-        Seq(Some(10), Some(11), Some(12))
+      val table3 = table2 - (0, "c")
+      assert(table3 == intStringMKT[Int](Seq(
+        Seq(null, 1, null),
+        Seq(10, 11, 12)
       )))
       assert(table3.sizes == (2, 3))
 
-      val table4 = table3 - (1, 2)
-      assert(table4 == IST.fromRows(Seq(
-        Seq(None, Some(1), None),
-        Seq(Some(10), Some(11), None)
+      val table4 = table3 - (1, "c")
+      assert(table4 == intStringMKT[Int](Seq(
+        Seq(null, 1, null),
+        Seq(10, 11, null)
       )))
       assert(table4.sizes == (2, 3))
       assert(table4.trim.sizes == (2, 2))
 
-      val table5 = table4 - (1, 0) - (1, 1)
-      assert(table5 == IST.fromRows(Seq(
-        Seq(None, Some(1), None),
-        Seq(None, None, None)
+      val table5 = table4 - (1, "a") - (1, "b")
+      assert(table5 == intStringMKT[Int](Seq(
+        Seq(null, 1, null),
+        Seq(null, null, null)
       )))
       assert(table5.sizes == (2, 3))
-      assert(table5.trim.sizes == (1, 2))
+      assert(table5.trim.sizes == (1, 1))
     }
 
     def `removing non-existing element` = {
-      assert((table - (5, 9)) == table)
-      assert((table - (0, 0) - (0, 0) - (0, 0)) == (table - (0, 0)))
+      assert((table - (5, "z")) == table)
+      assert((table - (0, "a") - (0, "a") - (0, "a")) == (table - (0, "a")))
     }
 
     def `concatenating tables` = {
-      assert(
-        table
-          ++ IST.fromRows(Seq(
-            Seq(None, Some("x"))
-          ))
-          == IST.fromRows(Seq(
-            SeqOfSome(0, "x", 2),
-            SeqOfSome(10, 11, 12)
-          ))
-      )
-      assert(
-        table
-          ++ IST.fromRows(Seq(
-            Seq(),
-            Seq(),
-            Seq(),
-            Seq(None, Some("x"))
-          ))
-          == IST.fromRows(Seq(
-            SeqOfSome(0, 1, 2),
-            SeqOfSome(10, 11, 12),
-            SeqOfSome(),
-            Seq(None, Some("x"))
-          ))
-      )
+      fail("http://stackoverflow.com/questions/42166770/inheritance-and-self-recursive-type-inference")
+      //      val t2 = intStringMKT[Any](Seq(
+      //        Seq(null, "x")
+      //      ))
+      //      assert(
+      //        table
+      //          ++ intStringMKT[Any](Seq(
+      //            Seq(null, "x")
+      //          ))
+      //          == intStringMKT(Seq(
+      //            Seq(0, "x", 2),
+      //            Seq(10, 11, 12)
+      //          ))
+      //      )
+      //      assert(
+      //        table
+      //          ++ IST.fromRows(Seq(
+      //            Seq(),
+      //            Seq(),
+      //            Seq(),
+      //            Seq(None, Some("x"))
+      //          ))
+      //          == IST.fromRows(Seq(
+      //            SeqOfSome(0, 1, 2),
+      //            SeqOfSome(10, 11, 12),
+      //            SeqOfSome(),
+      //            Seq(None, Some("x"))
+      //          ))
+      //      )
     }
 
     def `equality ` = {
       assert(table != null)
       assert(table != "bang!")
       assert(table == table)
-      assert(table == (table + (0, 0, 0)))
-      assert(table == (table + (1, 1, 11)))
-      assert(table != (table - (0, 0)))
+      assert(table == (table + (0, "a", 0)))
+      assert(table == (table + (1, "b", 11)))
+      assert(table != (table - (0, "a")))
       assert(table != table.transpose)
       assert(table == table.transpose.transpose)
       assert(table != table.withoutRow(0))
       assert(table == table.withoutRow(2))
-      assert(table != table.withoutCol(0))
-      assert(table == table.withoutCol(3))
-      assert(table == table.withoutRow(0).withRow(0, table.row(0)))
-      assert(table == table.withoutCol(0).withCol(0, table.col(0)))
+      assert(table != table.withoutCol("a"))
+      assert(table == table.withoutCol("d"))
+      assert(table == table.withoutRow(0).withRow(0, table.row(0)).sortedRows)
+      assert(table == table.withoutCol("a").withCol("a", table.col("a")).sortedCols)
       assert(table != table.swapRows(0, 1))
-      assert(table != table.swapCols(0, 2))
+      assert(table != table.swapCols("a", "c"))
+      assert(table != table.switchRows(0, 1))
+      assert(table != table.switchCols("a", "c"))
     }
 
     def `string representation` = {
       assert(table.toString == """|+-+--+--+--+
-                                  || |0 |1 |2 |
+                                  || |a |b |c |
                                   |+-+--+--+--+
                                   ||0|0 |1 |2 |
                                   |+-+--+--+--+
@@ -269,73 +275,61 @@ class MapKeyTableSpec extends Spec {
 
       def `filter ` = {
         val tableOfOdds = table.filter(_ % 2 != 0)
-        assert(tableOfOdds == IST.fromRows(Seq(
-          Seq(None, Some(1), None),
-          Seq(None, Some(11), None)
+        assert(tableOfOdds == intStringMKT[Int](Seq(
+          Seq(null, 1, null),
+          Seq(null, 11, null)
         )))
-        assert(tableOfOdds.filter(_ < 10) == IST.fromRows(Seq(
-          Seq(None, Some(1), None),
-          Seq(None, None, None)
+        assert(tableOfOdds.filter(_ < 10) == intStringMKT[Int](Seq(
+          Seq(null, 1, null),
+          Seq(null, null, null)
         )))
-        assert(tableOfOdds.filter(_ > 10) == IST.fromRows(Seq(
-          Seq(None, None, None),
-          Seq(None, Some(11), None)
+        assert(tableOfOdds.filter(_ > 10) == intStringMKT[Int](Seq(
+          Seq(null, null, null),
+          Seq(null, 11, null)
         )))
       }
 
       def `map and mapWithIndex` = {
-        assert(table.map(_ * 10) == IST.fromRows(Seq(
-          SeqOfSome(0, 10, 20),
-          SeqOfSome(100, 110, 120)
+        assert(table.map(_ * 10) == intStringMKT[Int](Seq(
+          Seq(0, 10, 20),
+          Seq(100, 110, 120)
         )))
         assert(table.mapWithIndex{
-          case (r, c, v) => (r * 1000) + (c * 100) + v
-        } == IST.fromRows(Seq(
-          SeqOfSome(0, 101, 202),
-          SeqOfSome(1010, 1111, 1212)
+          case (r, c, v) => s"$r $c $v"
+        } == intStringMKT[String](Seq(
+          Seq("0 a 0", "0 b 1", "0 c 2"),
+          Seq("1 a 10", "1 b 11", "1 c 12")
         )))
       }
     }
 
     object `row/col -` {
-      def `getters (as map)` = {
-        assert(table.row(0) == LM(0 -> 0, 1 -> 1, 2 -> 2))
-        assert(table.row(1) == LM(0 -> 10, 1 -> 11, 2 -> 12))
-        assert(table.col(0) == LM(0 -> 0, 1 -> 10))
-        assert(table.col(1) == LM(0 -> 1, 1 -> 11))
-        assert(table.col(2) == LM(0 -> 2, 1 -> 12))
-        assert((table + (0, 3, "x")).row(0) == LM(0 -> 0, 1 -> 1, 2 -> 2, 3 -> "x"))
-        assert((table + (0, 3, "x")).row(1) == LM(0 -> 10, 1 -> 11, 2 -> 12))
-        assert((table + (2, 0, "y")).col(0) == LM(0 -> 0, 1 -> 10, 2 -> "y"))
-        assert((table + (2, 0, "y")).col(1) == LM(0 -> 1, 1 -> 11))
-      }
-
-      def `getters (as seq)` = {
-        assert(table.rowAsSeq(0) == SeqOfSome(0, 1, 2))
-        assert(table.rowAsSeq(1) == SeqOfSome(10, 11, 12))
-        assert(table.colAsSeq(0) == SeqOfSome(0, 10))
-        assert(table.colAsSeq(1) == SeqOfSome(1, 11))
-        assert(table.colAsSeq(2) == SeqOfSome(2, 12))
-        assert((table + (0, 3, "x")).rowAsSeq(0) == SeqOfSome(0, 1, 2, "x"))
-        assert((table + (0, 3, "x")).rowAsSeq(1) == Seq(Some(10), Some(11), Some(12), None))
-        assert((table + (2, 0, "y")).colAsSeq(0) == SeqOfSome(0, 10, "y"))
-        assert((table + (2, 0, "y")).colAsSeq(1) == Seq(Some(1), Some(11), None))
+      def `getters ` = {
+        assert(table.row(0) == LM("a" -> 0, "b" -> 1, "c" -> 2))
+        assert(table.row(1) == LM("a" -> 10, "b" -> 11, "c" -> 12))
+        assert(table.col("a") == LM(0 -> 0, 1 -> 10))
+        assert(table.col("b") == LM(0 -> 1, 1 -> 11))
+        assert(table.col("c") == LM(0 -> 2, 1 -> 12))
+        assert((table + (0, "d", "x")).row(0) == LM("a" -> 0, "b" -> 1, "c" -> 2, "d" -> "x"))
+        assert((table + (0, "d", "x")).row(1) == LM("a" -> 10, "b" -> 11, "c" -> 12))
+        assert((table + (2, "a", "y")).col("a") == LM(0 -> 0, 1 -> 10, 2 -> "y"))
+        assert((table + (2, "a", "y")).col("b") == LM(0 -> 1, 1 -> 11))
       }
 
       def `is empty` = {
         assert(!table.isRowEmpty(0))
         assert(!table.isRowEmpty(1))
         assert(table.isRowEmpty(2))
+        assert(table.isRowEmpty(-1))
         assert(table.isRowEmpty(100500))
-        assert(!table.isColEmpty(0))
-        assert(!table.isColEmpty(1))
-        assert(!table.isColEmpty(2))
-        assert(table.isColEmpty(3))
-        assert(table.isColEmpty(100500))
+        assert(!table.isColEmpty("a"))
+        assert(!table.isColEmpty("b"))
+        assert(!table.isColEmpty("c"))
+        assert(table.isColEmpty("d"))
       }
 
       def `removal ` = {
-        def testTable[A](t: IndexedTable[A], sizes: (Int, Int), values: Seq[Int]) = {
+        def testTable[A](t: KeyTable[Int, String, A], sizes: (Int, Int), values: Seq[Int]) = {
           assert(t.sizes == sizes)
           assert(t.elements == values)
         }
@@ -343,181 +337,215 @@ class MapKeyTableSpec extends Spec {
         m.map(x => false)
         testTable(table.withoutRow(0), (1, 3), Seq(10, 11, 12))
         testTable(table.withoutRow(1), (1, 3), Seq(0, 1, 2))
-        testTable(table.withoutCol(0), (2, 2), Seq(1, 2, 11, 12))
-        testTable(table.withoutCol(1), (2, 2), Seq(0, 2, 10, 12))
-        testTable(table.withoutCol(2), (2, 2), Seq(0, 1, 10, 11))
+        testTable(table.withoutCol("a"), (2, 2), Seq(1, 2, 11, 12))
+        testTable(table.withoutCol("b"), (2, 2), Seq(0, 2, 10, 12))
+        testTable(table.withoutCol("c"), (2, 2), Seq(0, 1, 10, 11))
         assert(table.withoutRow(1) != table)
         assert(table.withoutRow(2) == table)
         assert(table.withoutRow(3) == table)
-        assert(table.withoutCol(2) != table)
-        assert(table.withoutCol(3) == table)
-        assert(table.withoutCol(4) == table)
+        assert(table.withoutCol("c") != table)
+        assert(table.withoutCol("d") == table)
       }
 
-      def `replace row (map)` = {
-        assert(table.withRow(0, SeqOfSome("x", "y", "z").toDefinedMap) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z"),
-          SeqOfSome(10, 11, 12)
-        )))
-        assert(table.withRow(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z", "!"),
-          SeqOfSome(10, 11, 12)
-        )))
-        assert(table
-          .withRow(0, SeqOfSome("x", "y").toDefinedMap)
-          .withRow(1, SeqOfSome("z", "!").toDefinedMap)
-          == IST.fromRows(Seq(
-            SeqOfSome("x", "y"),
-            SeqOfSome("z", "!")
+      object `with row -` {
+        def `replace first row, same length` = {
+          assert(table.withRow(0, LM("a" -> "x", "b" -> "y", "c" -> "z")) == intStringMKT[Any](Seq(
+            Seq("x", "y", "z"),
+            Seq(10, 11, 12)
           )))
-        assert(table.withRow(0, ISeq(Some("x"), Some("y"), Some("z")).toDefinedMap) == IST.fromRows(Seq(
-          Seq(Some("x"), Some("y"), Some("z")),
-          Seq(Some(10), Some(11), Some(12))
-        )))
+        }
+
+        def `replace first row with bigger one` = {
+          assert(table.withRow(0, LM("a" -> "x", "b" -> "y", "c" -> "z", "d" -> "!")) == intStringMKT[Any](Seq(
+            Seq("x", "y", "z", "!"),
+            Seq(10, 11, 12)
+          )))
+        }
+
+        def `add row after empty` = {
+          assert(table.withEmptyRow(2).withRow(3, LM("a" -> "x", "b" -> "y", "c" -> "z"))
+            == intStringMKT[Any](Seq(
+              Seq(0, 1, 2),
+              Seq(10, 11, 12),
+              Seq(),
+              Seq("x", "y", "z")
+            )))
+        }
+
+        def `replace all rows leaving empty rows/cols` = {
+          assert(table
+            .withRow(0, LM("a" -> "x", "b" -> "y"))
+            .withRow(1, LM())
+            == intStringMKT[String](Seq(
+              Seq("x", "y", null),
+              Seq()
+            )))
+        }
       }
 
-      def `replace row (seq)` = {
-        assert(table.withRow(0, SeqOfSome("x", "y", "z")) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z"),
-          SeqOfSome(10, 11, 12)
-        )))
-        assert(table.withRow(0, SeqOfSome("x", "y", "z", "!")) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z", "!"),
-          SeqOfSome(10, 11, 12)
-        )))
-        assert(table
-          .withRow(0, SeqOfSome("x", "y"))
-          .withRow(1, SeqOfSome("z", "!"))
-          == IST.fromRows(Seq(
-            SeqOfSome("x", "y"),
-            SeqOfSome("z", "!")
+      object `with col -` {
+        def `replace first col, same length` = {
+          assert(table.withCol("a", LM(0 -> "x", 1 -> "y")) == intStringMKT[Any](Seq(
+            Seq("x", 1, 2),
+            Seq("y", 11, 12)
           )))
-        assert(table.withRow(0, ISeq(Some("x"), Some("y"), Some("z"), None, None)) == IST.fromRows(Seq(
-          Seq(Some("x"), Some("y"), Some("z"), None, None),
-          Seq(Some(10), Some(11), Some(12), None, None)
-        )))
-      }
+        }
 
-      def `replace col (map)` = {
-        assert(table.withCol(0, SeqOfSome("x", "y").toDefinedMap) == IST.fromValues(Seq(
-          Seq("x", 1, 2),
-          Seq("y", 11, 12)
-        )))
-        assert(table.withCol(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) == IST.fromValues(Seq(
-          Seq("x", 1, 2),
-          Seq("y", 11, 12),
-          Seq("z"),
-          Seq("!")
-        )))
-        assert(table.withCol(4, SeqOfSome("x", "y").toDefinedMap)
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y"))
+        def `replace first col with bigger one` = {
+          assert(table.withCol("a", LM(0 -> "x", 1 -> "y", 2 -> "z", 3 -> "!")) == intStringMKT[Any](Seq(
+            Seq("x", 1, 2),
+            Seq("y", 11, 12),
+            Seq("z"),
+            Seq("!")
           )))
-        assert(table.withCol(4, ISeq(Some("x"), Some("y"), None, None, None).toDefinedMap)
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y"))
-          )))
-      }
+        }
 
-      def `replace col (seq)` = {
-        assert(table.withCol(0, SeqOfSome("x", "y")) == IST.fromValues(Seq(
-          Seq("x", 1, 2),
-          Seq("y", 11, 12)
-        )))
-        assert(table.withCol(0, SeqOfSome("x", "y", "z", "!")) == IST.fromValues(Seq(
-          Seq("x", 1, 2),
-          Seq("y", 11, 12),
-          Seq("z"),
-          Seq("!")
-        )))
-        assert(table.withCol(4, SeqOfSome("x", "y"))
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y"))
-          )))
-        assert(table.withCol(4, ISeq(Some("x"), Some("y"), None, None, None))
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y")),
-            Seq(None, None, None, None, None),
-            Seq(None, None, None, None, None),
-            Seq(None, None, None, None, None)
-          )))
+        def `add col after empty` = {
+          assert(table.withEmptyCol("d").withCol("e", LM(0 -> "x", 1 -> "y"))
+            == intStringMKT[Any](Seq(
+              Seq(0, 1, 2, null, "x"),
+              Seq(10, 11, 12, null, "y")
+            )))
+        }
+
+        def `replace all cols leaving empty rows/cols` = {
+          assert(table
+            .withCol("a", LM(0 -> "a0"))
+            .withCol("b", LM(0 -> "b0"))
+            .withCol("c", LM())
+            == intStringMKT[String](Seq(
+              Seq("a0", "b0", null),
+              Seq()
+            )))
+        }
       }
 
       def `swap ` = {
         assert(table.swapRows(0, 0) == table)
         assert(table.swapRows(1, 1) == table)
-        assert(table.swapCols(0, 0) == table)
-        assert(table.swapCols(1, 1) == table)
-        assert(table.swapCols(2, 2) == table)
-        assert(table.swapRows(0, 1) == IST.fromRows(Seq(
-          SeqOfSome(10, 11, 12),
-          SeqOfSome(0, 1, 2)
+        assert(table.swapCols("a", "a") == table)
+        assert(table.swapCols("b", "b") == table)
+        assert(table.swapCols("c", "c") == table)
+        assert(table.swapRows(0, 1) == intStringMKT[Int](Seq(
+          Seq(10, 11, 12),
+          Seq(0, 1, 2)
         )))
         assert(table.swapRows(0, 1) == table.swapRows(1, 0))
-        assert(table.swapCols(0, 1) == IST.fromRows(Seq(
-          SeqOfSome(1, 0, 2),
-          SeqOfSome(11, 10, 12)
+        assert(table.swapCols("a", "b") == intStringMKT[Int](Seq(
+          Seq(1, 0, 2),
+          Seq(11, 10, 12)
         )))
-        assert(table.swapCols(0, 2) == IST.fromRows(Seq(
-          SeqOfSome(2, 1, 0),
-          SeqOfSome(12, 11, 10)
+        assert(table.swapCols("a", "c") == intStringMKT[Int](Seq(
+          Seq(2, 1, 0),
+          Seq(12, 11, 10)
         )))
         intercept[IAEx] {
           table.swapRows(0, 2)
         }
         intercept[IAEx] {
-          table.swapCols(0, 3)
+          table.swapCols("a", "d")
         }
       }
 
-      def `sort rows` = {
-        val table = IST.fromValues(Seq(
-          Seq("d", "1"),
-          Seq("c", "2"),
-          Seq("a", "4"),
-          Seq("b", "3")
-        ))
-        assert(table.sortRowsBy(k => table.row(k)(0)) == IST.fromValues(Seq(
-          Seq("a", "4"),
-          Seq("b", "3"),
-          Seq("c", "2"),
-          Seq("d", "1")
+      def `switch ` = {
+        assert(table.switchRows(0, 0) == table)
+        assert(table.switchRows(1, 1) == table)
+        assert(table.switchCols("a", "a") == table)
+        assert(table.switchCols("b", "b") == table)
+        assert(table.switchCols("c", "c") == table)
+        assert(table.switchRows(0, 1) == MKT.fromRows(LM(
+          1 -> LM("a" -> 10, "b" -> 11, "c" -> 12),
+          0 -> LM("a" -> 0, "b" -> 1, "c" -> 2)
         )))
-        assert(table.sortRowsBy(k => table.row(k)(1)) == IST.fromValues(Seq(
-          Seq("d", "1"),
-          Seq("c", "2"),
-          Seq("b", "3"),
-          Seq("a", "4")
+        assert(table.switchRows(0, 1) == table.switchRows(1, 0))
+        assert(table.switchCols("a", "b") == MKT.fromRows(LM(
+          0 -> LM("b" -> 1, "a" -> 0, "c" -> 2),
+          1 -> LM("b" -> 11, "a" -> 10, "c" -> 12)
         )))
+        assert(table.switchCols("a", "c") == MKT.fromRows(LM(
+          0 -> LM("c" -> 2, "b" -> 1, "a" -> 0),
+          1 -> LM("c" -> 12, "b" -> 11, "a" -> 10)
+        )))
+        intercept[IAEx] {
+          table.switchRows(0, 2)
+        }
+        intercept[IAEx] {
+          table.switchCols("a", "d")
+        }
       }
 
-      def `sort cols` = {
-        val table = IST.fromValues(Seq(
-          Seq("d", "b", "a", "c"),
-          Seq("1", "3", "4", "2")
-        ))
-        assert(table.sortColsBy(k => table.col(k)(0)) == IST.fromValues(Seq(
-          Seq("a", "b", "c", "d"),
-          Seq("4", "3", "2", "1")
-        )))
-        assert(table.sortColsBy(k => table.col(k)(1)) == IST.fromValues(Seq(
-          Seq("d", "c", "b", "a"),
-          Seq("1", "2", "3", "4")
-        )))
+      object `sort ` {
+        def `rows (default)` = {
+          val table = MKT.fromRows(LM(
+            5 -> LM("b" -> "55", "a" -> "555"),
+            1 -> LM("b" -> "11", "a" -> "111"),
+            3 -> LM("b" -> "33", "a" -> "333"),
+            4 -> LM("b" -> "44", "a" -> "444")
+          ))
+          assert(table.sortedRows == MKT.fromRows(LM(
+            1 -> LM("b" -> "11", "a" -> "111"),
+            3 -> LM("b" -> "33", "a" -> "333"),
+            4 -> LM("b" -> "44", "a" -> "444"),
+            5 -> LM("b" -> "55", "a" -> "555")
+          )))
+        }
+
+        def `cols (default)` = {
+          val table = MKT.fromRows(LM(
+            1 -> LM("b" -> "22", "d" -> "44", "a" -> "11", "c" -> "33"),
+            0 -> LM("b" -> "222", "d" -> "444", "a" -> "111", "c" -> "333")
+          ))
+          assert(table.sortedCols == MKT.fromRows(LM(
+            1 -> LM("a" -> "11", "b" -> "22", "c" -> "33", "d" -> "44"),
+            0 -> LM("a" -> "111", "b" -> "222", "c" -> "333", "d" -> "444")
+          )))
+        }
+
+        def `rows by` = {
+          val table = intStringMKT[String](Seq(
+            Seq("d", "1"),
+            Seq("c", "2"),
+            Seq("a", "4"),
+            Seq("b", "3")
+          ))
+          assert(table.sortRowsBy(k => table.row(k)("a")) == MKT.fromRows(LM(
+            2 -> LM("a" -> "a", "b" -> "4"),
+            3 -> LM("a" -> "b", "b" -> "3"),
+            1 -> LM("a" -> "c", "b" -> "2"),
+            0 -> LM("a" -> "d", "b" -> "1")
+          )))
+          assert(table.sortRowsBy(k => table.row(k)("b")) == MKT.fromRows(LM(
+            0 -> LM("a" -> "d", "b" -> "1"),
+            1 -> LM("a" -> "c", "b" -> "2"),
+            3 -> LM("a" -> "b", "b" -> "3"),
+            2 -> LM("a" -> "a", "b" -> "4")
+          )))
+        }
+
+        def `cols by` = {
+          val table = intStringMKT[String](Seq(
+            Seq("d", "b", "a", "c"),
+            Seq("1", "3", "4", "2")
+          ))
+          assert(table.sortColsBy(k => table.col(k)(0)) == MKT.fromRows(LM(
+            0 -> LM("c" -> "a", "b" -> "b", "d" -> "c", "a" -> "d"),
+            1 -> LM("c" -> "4", "b" -> "3", "d" -> "2", "a" -> "1")
+          )))
+          assert(table.sortColsBy(k => table.col(k)(1)) == MKT.fromRows(LM(
+            0 -> LM("a" -> "d", "d" -> "c", "b" -> "b", "c" -> "a"),
+            1 -> LM("a" -> "1", "d" -> "2", "b" -> "3", "c" -> "4")
+          )))
+        }
       }
     }
-  }*/
+  }
 
-  object `2x3 sparse table -` {
-    val table = MKT.fromRows[Int, String, Int](LM(
-      0 -> LM("a" -> 0, "b" -> 1),
-      1 -> LM("b" -> 11),
-      2 -> LM()
-    )) withCol ("c", LM.empty) withCol ("d", LM.empty)
+  object `3x4 sparse table -` {
+    val table = intStringMKT[Int](Seq(
+      Seq(0, 1, null, null),
+      Seq(null, 11),
+      Seq()
+    ))
 
     def `not equals when constructed with different order` = {
       assert(table != MKT.fromRows[Int, String, Int](LM(
@@ -543,31 +571,64 @@ class MapKeyTableSpec extends Spec {
     }
 
     def `swap ` = {
+      assert(table.swapRows(0, 1) == table.swapRows(1, 0))
+      assert(table.swapCols("a", "b") == table.swapCols("b", "a"))
       assert(
         table.swapRows(0, 1) ==
+          intStringMKT[Int](Seq(
+            Seq(null, 11),
+            Seq(0, 1, null, null),
+            Seq()
+          ))
+      )
+      assert(
+        table.swapCols("a", "b") ==
+          intStringMKT[Int](Seq(
+            Seq(1, 0, null, null),
+            Seq(11),
+            Seq()
+          ))
+      )
+      assert(
+        table.swapCols("a", "d") ==
+          intStringMKT[Int](Seq(
+            Seq(null, 1, null, 0),
+            Seq(null, 11),
+            Seq()
+          ))
+      )
+    }
+
+    def `switch ` = {
+      assert(table.switchRows(0, 1) == table.switchRows(1, 0))
+      assert(table.switchCols("a", "b") == table.switchCols("b", "a"))
+      assert(
+        table.switchRows(0, 1) ==
           (MKT.fromRows[Int, String, Int](
-            LM(0 -> LM(), 1 -> LM(), 2 -> LM()))
-            .withCol("a", LM(1 -> 0))
-            .withCol("b", LM(0 -> 11, 1 -> 1))
+            LM(1 -> LM(), 0 -> LM(), 2 -> LM()))
+            .withCol("a", LM(0 -> 0))
+            .withCol("b", LM(0 -> 1, 1 -> 11))
             .withCol("c", LM())
             .withCol("d", LM()))
       )
-      assert(table.swapRows(0, 1) == table.swapRows(1, 0))
-      assert(table.swapCols("a", "b") == MKT.fromRows[Int, String, Int](LM(
-        0 -> LM("a" -> 1, "b" -> 0),
-        1 -> LM("a" -> 11),
-        2 -> LM()
-      )).withCol("c", LM.empty).withCol("d", Map.empty))
       assert(
-        table.swapCols("a", "d") ==
+        table.switchCols("a", "b") ==
           (MKT.fromRows[Int, String, Int](
             LM(0 -> LM(), 1 -> LM(), 2 -> LM()))
-            .withCol("a", LM())
+            .withCol("b", LM(0 -> 1, 1 -> 11))
+            .withCol("a", LM(0 -> 0))
+            .withCol("c", LM())
+            .withCol("d", LM()))
+      )
+      assert(
+        table.switchCols("a", "d") ==
+          (MKT.fromRows[Int, String, Int](
+            LM(0 -> LM(), 1 -> LM(), 2 -> LM()))
+            .withCol("d", LM())
             .withCol("b", LM(0 -> 1, 1 -> 11))
             .withCol("c", LM())
-            .withCol("d", LM(0 -> 0)))
+            .withCol("a", LM(0 -> 0)))
       )
-      assert(table.swapCols("a", "b") == table.swapCols("b", "a"))
     }
   }
 
@@ -575,7 +636,27 @@ class MapKeyTableSpec extends Spec {
   // Helpers
   //
 
-  private def SeqOfSome[A](as: A*): IndexedSeq[Option[A]] = {
-    IndexedSeq(as: _*).map(Some.apply)
+  private def intStringMKT[A: ClassTag](els: Seq[Seq[Any]]): KeyTable[Int, String, A] = {
+    val rowIndices = 0 until els.size
+    val charStrings = 'a' to 'z' map (_.toString)
+    val colIndices = charStrings take els.map(_.size).max
+    val table: KeyTable[Int, String, A] = {
+      val table1: KeyTable[Int, String, A] = MKT.empty
+      val table2 = rowIndices.foldLeft(table1)((t, r) => t.withEmptyRow(r))
+      val table3 = colIndices.foldLeft(table2)((t, c) => t.withEmptyCol(c))
+      table3
+    }
+    val result = els.zipWithIndex.foldLeft(table) {
+      case (t, (row, r)) =>
+        row.zipWithIndex.foldLeft(t) {
+          case (t, (el: A, ci)) =>
+            t + (r, colIndices(ci), el)
+          case (t, (el, _)) if el == null =>
+            t
+          case (_, (el, _)) =>
+            throw new IllegalArgumentException(s"Unexpected element in row $row: $el")
+        }
+    }
+    result
   }
 }

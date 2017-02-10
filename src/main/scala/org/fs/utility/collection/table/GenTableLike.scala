@@ -6,7 +6,7 @@ package org.fs.utility.collection.table
  *
  * <pre>
  *     a   b   c   d   e
- *   +---+---+---+---+---+--> (R)
+ *   +---+---+---+---+---+--> (C)
  * 0 |0x0|0x1|0x2|0x3|0x4
  *   +---+---+---+---+---
  * 1 |1x0|1x1|1x2|1x3|1x4
@@ -15,7 +15,7 @@ package org.fs.utility.collection.table
  *   +
  *   |
  *   V
- *  (C)
+ *  (R)
  * </pre>
  *
  * @author FS
@@ -24,13 +24,11 @@ package org.fs.utility.collection.table
  * @param A stored value type
  * @param SelfType self-recursive type of this table, used as a lower constraint for return types
  * @param TransposedType type of table after transposition
- * @see Table
+ * @see IndexedTable
  * @see KeyTable
  */
 trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, SelfType, TransposedType], +TransposedType[+A2] <: GenTableLike[CKT, RKT, A2, TransposedType, SelfType]]
     extends PartialFunction[(RKT, CKT), A] { self: SelfType[A] =>
-
-  type ST[+A2] <: SelfType[A2]
 
   type RowType[+A2] = Map[CKT, A2]
   type ColType[+A2] = Map[RKT, A2]
@@ -149,6 +147,8 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   /** @return table without value at a given position (NOT dropping empty rows/columns) */
   def -(r: RKT, c: CKT): SelfType[A]
 
+  def transpose: TransposedType[A]
+
   /** Swaps the content of the given rows, both of which should be defined */
   @throws[IllegalArgumentException]("if any index were undefined")
   def swapRows(r1: RKT, r2: RKT): SelfType[A]
@@ -156,31 +156,6 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   /** Swaps the content of the given columns, both of which should be defined */
   @throws[IllegalArgumentException]("if any index were undefined")
   def swapCols(c1: CKT, c2: CKT): SelfType[A]
-
-  /** */
-  def sortRowsBy[B](f: RKT => B)(implicit ord: Ordering[B]): SelfType[A] = {
-    def swap(t: SelfType[A], k1: RKT, k2: RKT): SelfType[A] =
-      t.swapRows(k1, k2)
-    GenTableLike.sortLinesBy[RKT, CKT, A, SelfType, TransposedType, RKT, B](self, rowKeys, swap _, f)
-  }
-
-  def sortColsBy[B](f: CKT => B)(implicit ord: Ordering[B]): SelfType[A] = {
-    def swap(t: SelfType[A], k1: CKT, k2: CKT): SelfType[A] =
-      t.swapCols(k1, k2)
-    GenTableLike.sortLinesBy[RKT, CKT, A, SelfType, TransposedType, CKT, B](self, colKeys, swap _, f)
-  }
-
-  def transpose: TransposedType[A]
-
-  //
-  // Helpers
-  //
-
-  protected def emptyRow: RowType[A] =
-    Map.empty
-
-  protected def emptyCol: ColType[A] =
-    Map.empty
 
   //
   // Collection methods
@@ -265,33 +240,39 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
       "\n" + separatorString
     )
   }
+
+  //
+  // Helpers
+  //
+
+  protected def emptyRow: RowType[A] =
+    Map.empty
+
+  protected def emptyCol: ColType[A] =
+    Map.empty
+
 }
 
 object GenTableLike {
   import org.fs.utility.collection.table.{ GenTableLike => GTL }
 
-  def sortLinesBy[RKT, CKT, A, ST[+A2] <: GTL[RKT, CKT, A2, ST, TT], TT[+A2] <: GTL[CKT, RKT, A2, TT, ST], KT, B](
-    self: ST[A],
-    keys: IndexedSeq[KT],
-    swapLines: (ST[A], KT, KT) => ST[A],
-    orderingFunction: KT => B)(implicit ord: Ordering[B]): ST[A] =
-    {
-      val sortedKeys = keys.sortBy(orderingFunction)(ord)
-      val keyPairs = keys zip sortedKeys
-      val swapPairs = keyPairs.foldLeft(Map.empty[KT, KT]) {
-        case (replacements, (srcKey, destKey)) =>
-          def getRealDestKey(k: KT): KT = {
-            if (replacements.contains(k)) getRealDestKey(replacements(k)) else k
-          }
-          val realDestKey = getRealDestKey(destKey)
-          val newMap = replacements.updated(srcKey, realDestKey)
-          newMap
-      } filter (p => p._1 != p._2)
-      val result = swapPairs.foldLeft(self){
-        case (acc, (k1, k2)) =>
-          val res = swapLines(acc, k1, k2)
-          res
-      }
-      result
+  protected[table] def sortLinesBy[KT, B >: KT, Table](table: Table,
+                                                       keys: IndexedSeq[KT],
+                                                       swapLines: (Table, KT, KT) => Table)(implicit ord: Ordering[B]): Table = {
+    val sortedKeys = keys.sorted(ord)
+    val keyPairs = keys zip sortedKeys
+    val swapPairs = keyPairs.foldLeft(Map.empty[KT, KT]) {
+      case (replacements, (srcKey, destKey)) =>
+        def getRealDestKey(k: KT): KT = {
+          if (replacements contains k) getRealDestKey(replacements(k)) else k
+        }
+        val realDestKey = getRealDestKey(destKey)
+        replacements.updated(srcKey, realDestKey)
+    } filter (p => p._1 != p._2)
+    val result = swapPairs.foldLeft(table){
+      case (acc, (k1, k2)) =>
+        swapLines(acc, k1, k2)
     }
+    result
+  }
 }

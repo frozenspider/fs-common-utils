@@ -45,19 +45,39 @@ trait IndexedTable[+A]
   /** @throws IllegalArgumentException if c is negative or is greater than columns count */
   def colAsSeq(c: Int): IndexedSeq[Option[A]]
 
-  /** Adds/replaces the sequence-bassed row in the table. Empty trailing elements are NOT trimmed. */
+  /** Adds/replaces the row in the table, padding table if necessary. */
+  @throws[IllegalArgumentException]("if the index was negative")
+  override def withRow[B >: A](r: Int, row: Map[Int, B]): IndexedTable[B]
+
+  /** Adds/replaces the column in the table, padding table if necessary. */
+  @throws[IllegalArgumentException]("if the index was negative")
+  override def withCol[B >: A](c: Int, col: Map[Int, B]): IndexedTable[B]
+
+  /**
+   * Adds/replaces the sequence-bassed row in the table, padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
   @throws[IllegalArgumentException]("if the index was negative")
   def withRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedTable[B]
 
-  /** Adds/replaces the sequence-bassed column in the table. Empty trailing elements are NOT trimmed. */
+  /**
+   * Adds/replaces the sequence-bassed column in the table, padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
   @throws[IllegalArgumentException]("if the index was negative")
   def withCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedTable[B]
 
-  /** Inserts the sequence-bassed row in the table, causing rows shift. Empty trailing elements are NOT trimmed. */
+  /**
+   * Inserts the sequence-bassed row in the table, causing rows shift and padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
   @throws[IllegalArgumentException]("if the index was negative")
   def withInsertedRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedTable[B]
 
-  /** Inserts the sequence-bassed column in the table, causing columns shift. Empty trailing elements are NOT trimmed. */
+  /**
+   * Inserts the sequence-bassed column in the table, causing columns shift and padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
   @throws[IllegalArgumentException]("if the index was negative")
   def withInsertedCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedTable[B]
 
@@ -73,6 +93,22 @@ trait IndexedTable[+A]
 
   /** @return this table without trailing empty rows/column */
   def trim: IndexedTable[A]
+
+  //
+  // Sorting and rearrangement
+  //
+
+  def sortRowsBy[B](f: Int => B)(implicit ord: Ordering[B]): IndexedTable[A] = {
+    def exchange(t: IndexedTable[A], k1: Int, k2: Int): IndexedTable[A] =
+      t.swapRows(k1, k2)
+    GenTableLike.sortLinesBy[Int, Int, IndexedTable[A]](this, rowKeys, exchange)(ord on f)
+  }
+
+  def sortColsBy[B](f: Int => B)(implicit ord: Ordering[B]): IndexedTable[A] = {
+    def exchange(t: IndexedTable[A], k1: Int, k2: Int): IndexedTable[A] =
+      t.swapCols(k1, k2)
+    GenTableLike.sortLinesBy[Int, Int, IndexedTable[A]](this, colKeys, exchange)(ord on f)
+  }
 
   //
   // Standard
