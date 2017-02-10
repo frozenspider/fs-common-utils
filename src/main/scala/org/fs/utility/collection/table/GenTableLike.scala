@@ -149,11 +149,11 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   /** @return table without value at a given position (NOT dropping empty rows/columns) */
   def -(r: RKT, c: CKT): SelfType[A]
 
-  /** Swaps the given rows, both of which should be defined */
+  /** Swaps the content of the given rows, both of which should be defined */
   @throws[IllegalArgumentException]("if any index were undefined")
   def swapRows(r1: RKT, r2: RKT): SelfType[A]
 
-  /** Swaps the given columns, both of which should be defined */
+  /** Swaps the content of the given columns, both of which should be defined */
   @throws[IllegalArgumentException]("if any index were undefined")
   def swapCols(c1: CKT, c2: CKT): SelfType[A]
 
