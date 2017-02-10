@@ -28,18 +28,19 @@ trait KeyTable[RKT, CKT, +A]
   // Standard
   //
 
+  /** Two tables are considered equal when they have the same sizes, ordered keys and elements */
   override def equals(o: Any): Boolean = o match {
     case that: KeyTable[_, _, _] =>
-      (this.sizes == that.sizes
-        && this.rowKeys == that.rowKeys
-        && this.colKeys == that.colKeys
-        && this.elementsWithIndices == that.elementsWithIndices)
+      this.sizes == that.sizes &&
+        this.rowKeys == that.rowKeys &&
+        this.colKeys == that.colKeys &&
+        this.elementsWithIndices == that.elementsWithIndices
     case _ =>
       false
   }
 
   override lazy val hashCode: Int = {
-    this.elementsWithIndices.hashCode * 13
+    7 * rowKeys.hashCode + 11 * colKeys.hashCode + 13 * elements.hashCode
   }
 }
 

@@ -68,9 +68,10 @@ class MapKeyTable[RKT, CKT, +A] private (
 
   override def elementsWithIndices: Seq[(RKT, CKT, A)] =
     for {
-      (r, row) <- rows.toSeq
-      (c, el) <- row
-    } yield (r, c, el)
+      r <- rowKeys if rows contains r
+      val row = rows(r)
+      c <- colKeys if row contains c
+    } yield (r, c, row(c))
 
   override def +[B >: A](r: RKT, c: CKT, v: B): MapKeyTable[RKT, CKT, B] = {
     val rows2 = rows + (r -> (rows.getOrElse(r, ListMap.empty) + (c -> v)))
@@ -106,18 +107,23 @@ class MapKeyTable[RKT, CKT, +A] private (
 
   override def swapCols(c1: CKT, c2: CKT): MapKeyTable[RKT, CKT, A] = {
     require(colKeys.contains(c1) && colKeys.contains(c2), "Both keys should be defined")
-    val colKeys2 = colKeys
-      .updated(colKeys.indexOf(c1), c2)
-      .updated(colKeys.indexOf(c2), c1)
-    new MapKeyTable(rows, rowKeys, colKeys2)
+    val rows2 = rows map {
+      case (r, row) =>
+        val el1 = row.get(c1)
+        val el2 = row.get(c2)
+        val row2 = if (row contains c1) row.updated(c2, row(c1)) else row - c2
+        val row3 = if (row contains c2) row2.updated(c1, row(c2)) else row2 - c1
+        r -> row3
+    }
+    new MapKeyTable(rows2, rowKeys, colKeys)
   }
 
   override def swapRows(r1: RKT, r2: RKT): MapKeyTable[RKT, CKT, A] = {
     require(rowKeys.contains(r1) && rowKeys.contains(r2), "Both keys should be defined")
-    val rowKeys2 = rowKeys
-      .updated(rowKeys.indexOf(r1), r2)
-      .updated(rowKeys.indexOf(r2), r1)
-    new MapKeyTable(rows, rowKeys2, colKeys)
+    val row1 = rows.getOrElse(r1, emptyRow)
+    val row2 = rows.getOrElse(r2, emptyRow)
+    val rows2 = rows.updated(r1, row2).updated(r2, row1)
+    new MapKeyTable(rows2, rowKeys, colKeys)
   }
 
   override def withoutRow(r: RKT): MapKeyTable[RKT, CKT, A] =

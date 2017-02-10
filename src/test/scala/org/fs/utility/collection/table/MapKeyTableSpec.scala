@@ -543,15 +543,19 @@ class MapKeyTableSpec extends Spec {
     }
 
     def `swap ` = {
-      assert(table.swapRows(0, 1) == MKT.fromRows[Int, String, Int](LM(
-        0 -> LM("b" -> 11),
-        1 -> LM("a" -> 0, "b" -> 1),
-        2 -> LM()
-      )).withCol("c", LM.empty).withCol("d", LM.empty))
+      assert(
+        table.swapRows(0, 1) ==
+          (MKT.fromRows[Int, String, Int](
+            LM(0 -> LM(), 1 -> LM(), 2 -> LM()))
+            .withCol("a", LM(1 -> 0))
+            .withCol("b", LM(0 -> 11, 1 -> 1))
+            .withCol("c", LM())
+            .withCol("d", LM()))
+      )
       assert(table.swapRows(0, 1) == table.swapRows(1, 0))
       assert(table.swapCols("a", "b") == MKT.fromRows[Int, String, Int](LM(
-        0 -> LM("a" -> 11),
-        1 -> LM("a" -> 1, "b" -> 0),
+        0 -> LM("a" -> 1, "b" -> 0),
+        1 -> LM("a" -> 11),
         2 -> LM()
       )).withCol("c", LM.empty).withCol("d", Map.empty))
       assert(
