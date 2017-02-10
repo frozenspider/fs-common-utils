@@ -4,6 +4,7 @@ import org.junit.runner.RunWith
 import org.scalatest.Spec
 import org.scalatest.junit.JUnitRunner
 import org.fs.utility.Implicits._
+import scala.collection.immutable.ListMap
 
 @RunWith(classOf[JUnitRunner])
 class IndexedSeqTableSpec extends Spec {
@@ -18,6 +19,8 @@ class IndexedSeqTableSpec extends Spec {
     assert(table.isEmpty)
     assert(table.sizes == (0, 0))
     assert(table.count == 0)
+    assert(table.rowKeys.isEmpty)
+    assert(table.colKeys.isEmpty)
     assert(table.isDefinedAt(0, 0) == false)
     assert(table.isDefinedAt((0, 0)) == false)
     assert(table.isDefinedAt(-1, -1) == false)
@@ -27,12 +30,12 @@ class IndexedSeqTableSpec extends Spec {
     intercept[IAEx]{ table(0, 0) }
     intercept[IAEx]{ table((0, 0)) }
     intercept[IAEx]{ table(-1, -1) }
-    assert(table.row(0) == Map.empty)
-    assert(table.col(0) == Map.empty)
+    assert(table.row(0) == ListMap.empty)
+    assert(table.col(0) == ListMap.empty)
     assert(table.rowAsSeq(0) == IndexedSeq.empty)
     assert(table.colAsSeq(0) == IndexedSeq.empty)
-    assert(table.row(-1) == Map.empty)
-    assert(table.col(-1) == Map.empty)
+    assert(table.row(-1) == ListMap.empty)
+    assert(table.col(-1) == ListMap.empty)
     assert(table.rowAsSeq(-1) == IndexedSeq.empty)
     assert(table.colAsSeq(-1) == IndexedSeq.empty)
   }
@@ -57,12 +60,12 @@ class IndexedSeqTableSpec extends Spec {
     intercept[IAEx]{ table(0, 0) }
     intercept[IAEx]{ table((0, 0)) }
     intercept[IAEx]{ table(-1, -1) }
-    assert(table.row(0) == Map.empty)
-    assert(table.col(0) == Map.empty)
+    assert(table.row(0) == ListMap.empty)
+    assert(table.col(0) == ListMap.empty)
     assert(table.rowAsSeq(0) == Seq(None, None))
     assert(table.colAsSeq(0) == Seq(None, None, None))
-    assert(table.row(-1) == Map.empty)
-    assert(table.col(-1) == Map.empty)
+    assert(table.row(-1) == ListMap.empty)
+    assert(table.col(-1) == ListMap.empty)
     assert(table.rowAsSeq(-1) == IndexedSeq.empty)
     assert(table.colAsSeq(-1) == IndexedSeq.empty)
   }
@@ -250,6 +253,25 @@ class IndexedSeqTableSpec extends Spec {
       )
     }
 
+    def `equality ` = {
+      assert(table != null)
+      assert(table != "bang!")
+      assert(table == table)
+      assert(table == (table + (0, 0, 0)))
+      assert(table == (table + (1, 1, 11)))
+      assert(table != (table - (0, 0)))
+      assert(table != table.transpose)
+      assert(table == table.transpose.transpose)
+      assert(table != table.withoutRow(0))
+      assert(table == table.withoutRow(2))
+      assert(table != table.withoutCol(0))
+      assert(table == table.withoutCol(3))
+      assert(table == table.withoutRow(0).withInsertedRow(0, table.rowAsSeq(0)))
+      assert(table == table.withoutCol(0).withInsertedCol(0, table.colAsSeq(0)))
+      assert(table != table.swapRows(0, 1))
+      assert(table != table.swapCols(0, 2))
+    }
+
     def `string representation` = {
       assert(table.toString == """|+-+--+--+--+
                                   || |0 |1 |2 |
@@ -311,15 +333,15 @@ class IndexedSeqTableSpec extends Spec {
 
     object `row/col -` {
       def `getters (as map)` = {
-        assert(table.row(0) == Map(0 -> 0, 1 -> 1, 2 -> 2))
-        assert(table.row(1) == Map(0 -> 10, 1 -> 11, 2 -> 12))
-        assert(table.col(0) == Map(0 -> 0, 1 -> 10))
-        assert(table.col(1) == Map(0 -> 1, 1 -> 11))
-        assert(table.col(2) == Map(0 -> 2, 1 -> 12))
-        assert((table + (0, 3, "x")).row(0) == Map(0 -> 0, 1 -> 1, 2 -> 2, 3 -> "x"))
-        assert((table + (0, 3, "x")).row(1) == Map(0 -> 10, 1 -> 11, 2 -> 12))
-        assert((table + (2, 0, "y")).col(0) == Map(0 -> 0, 1 -> 10, 2 -> "y"))
-        assert((table + (2, 0, "y")).col(1) == Map(0 -> 1, 1 -> 11))
+        assert(table.row(0) == ListMap(0 -> 0, 1 -> 1, 2 -> 2))
+        assert(table.row(1) == ListMap(0 -> 10, 1 -> 11, 2 -> 12))
+        assert(table.col(0) == ListMap(0 -> 0, 1 -> 10))
+        assert(table.col(1) == ListMap(0 -> 1, 1 -> 11))
+        assert(table.col(2) == ListMap(0 -> 2, 1 -> 12))
+        assert((table + (0, 3, "x")).row(0) == ListMap(0 -> 0, 1 -> 1, 2 -> 2, 3 -> "x"))
+        assert((table + (0, 3, "x")).row(1) == ListMap(0 -> 10, 1 -> 11, 2 -> 12))
+        assert((table + (2, 0, "y")).col(0) == ListMap(0 -> 0, 1 -> 10, 2 -> "y"))
+        assert((table + (2, 0, "y")).col(1) == ListMap(0 -> 1, 1 -> 11))
       }
 
       def `getters (as seq)` = {
@@ -410,6 +432,44 @@ class IndexedSeqTableSpec extends Spec {
         )))
       }
 
+      def `insert row` = {
+        assert(table.withInsertedRow(0, SeqOfSome("x", "y", "z")) == IST.fromRows(Seq(
+          SeqOfSome("x", "y", "z"),
+          SeqOfSome(0, 1, 2),
+          SeqOfSome(10, 11, 12)
+        )))
+        assert(table.withInsertedRow(2, SeqOfSome("x", "y", "z")) == IST.fromRows(Seq(
+          SeqOfSome(0, 1, 2),
+          SeqOfSome(10, 11, 12),
+          SeqOfSome("x", "y", "z")
+        )))
+        assert(table.withInsertedRow(3, SeqOfSome("x", "y", "z")) == IST.fromRows(Seq(
+          SeqOfSome(0, 1, 2),
+          SeqOfSome(10, 11, 12),
+          SeqOfSome(),
+          SeqOfSome("x", "y", "z")
+        )))
+        assert(table.withInsertedRow(0, SeqOfSome("x", "y", "z", "!")) == IST.fromRows(Seq(
+          SeqOfSome("x", "y", "z", "!"),
+          SeqOfSome(0, 1, 2),
+          SeqOfSome(10, 11, 12)
+        )))
+        assert(table
+          .withInsertedRow(0, SeqOfSome("x", "y"))
+          .withInsertedRow(1, SeqOfSome("z", "!"))
+          == IST.fromRows(Seq(
+            SeqOfSome("x", "y"),
+            SeqOfSome("z", "!"),
+            SeqOfSome(0, 1, 2),
+            SeqOfSome(10, 11, 12)
+          )))
+        assert(table.withInsertedRow(0, ISeq(Some("x"), Some("y"), Some("z"), None, None)) == IST.fromRows(Seq(
+          Seq(Some("x"), Some("y"), Some("z"), None, None),
+          Seq(Some(0), Some(1), Some(2), None, None),
+          Seq(Some(10), Some(11), Some(12), None, None)
+        )))
+      }
+
       def `replace col (map)` = {
         assert(table.withCol(0, SeqOfSome("x", "y").toDefinedMap) == IST.fromValues(Seq(
           Seq("x", 1, 2),
@@ -450,6 +510,32 @@ class IndexedSeqTableSpec extends Spec {
             Seq(Some(10), Some(11), Some(12), None, Some("y"))
           )))
         assert(table.withCol(4, ISeq(Some("x"), Some("y"), None, None, None))
+          == IST.fromRows(Seq(
+            Seq(Some(0), Some(1), Some(2), None, Some("x")),
+            Seq(Some(10), Some(11), Some(12), None, Some("y")),
+            Seq(None, None, None, None, None),
+            Seq(None, None, None, None, None),
+            Seq(None, None, None, None, None)
+          )))
+      }
+
+      def `insert col` = {
+        assert(table.withInsertedCol(0, SeqOfSome("x", "y")) == IST.fromValues(Seq(
+          Seq("x", 0, 1, 2),
+          Seq("y", 10, 11, 12)
+        )))
+        assert(table.withInsertedCol(0, SeqOfSome("x", "y", "z", "!")) == IST.fromValues(Seq(
+          Seq("x", 0, 1, 2),
+          Seq("y", 10, 11, 12),
+          Seq("z"),
+          Seq("!")
+        )))
+        assert(table.withInsertedCol(4, SeqOfSome("x", "y"))
+          == IST.fromRows(Seq(
+            Seq(Some(0), Some(1), Some(2), None, Some("x")),
+            Seq(Some(10), Some(11), Some(12), None, Some("y"))
+          )))
+        assert(table.withInsertedCol(4, ISeq(Some("x"), Some("y"), None, None, None))
           == IST.fromRows(Seq(
             Seq(Some(0), Some(1), Some(2), None, Some("x")),
             Seq(Some(10), Some(11), Some(12), None, Some("y")),

@@ -53,6 +53,20 @@ trait IndexedTable[+A]
   @throws[IllegalArgumentException]("if the index was negative")
   def withCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedTable[B]
 
+  /** Inserts the sequence-bassed row in the table, causing rows shift. Empty trailing elements are NOT trimmed. */
+  @throws[IllegalArgumentException]("if the index was negative")
+  def withInsertedRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedTable[B]
+
+  /** Inserts the sequence-bassed column in the table, causing columns shift. Empty trailing elements are NOT trimmed. */
+  @throws[IllegalArgumentException]("if the index was negative")
+  def withInsertedCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedTable[B]
+
+  /** @return table without the given row, whether it was present or not, shifting subsequent rows */
+  def withoutRow(r: Int): IndexedTable[A]
+
+  /** @return table without the given column, whether it was present or not, shifting subsequent columns */
+  def withoutCol(c: Int): IndexedTable[A]
+
   override def rowKeys: Range = 0 until sizes._1
 
   override def colKeys: Range = 0 until sizes._2

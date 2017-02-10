@@ -170,12 +170,6 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
     GenTableLike.sortLinesBy[RKT, CKT, A, SelfType, TransposedType, CKT, B](self, colKeys, swap _, f)
   }
 
-  /** @return table without the given row, whether it was present or not */
-  def withoutRow(r: RKT): SelfType[A]
-
-  /** @return table without the given column, whether it was present or not */
-  def withoutCol(c: CKT): SelfType[A]
-
   def transpose: TransposedType[A]
 
   //
@@ -219,15 +213,19 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   // Standard
   //
 
+  /** Two tables are considered equal when they have the same sizes, ordered keys and elements */
   override def equals(o: Any): Boolean = o match {
     case that: GenTableLike[_, _, _, _, _] =>
-      this.sizes == that.sizes && this.elementsWithIndices == that.elementsWithIndices
+      this.sizes == that.sizes &&
+        this.rowKeys == that.rowKeys &&
+        this.colKeys == that.colKeys &&
+        this.elementsWithIndices == that.elementsWithIndices
     case _ =>
       false
   }
 
   override lazy val hashCode: Int = {
-    13 * elements.hashCode
+    7 * rowKeys.hashCode + 11 * colKeys.hashCode + 13 * elements.hashCode
   }
 
   /**

@@ -97,23 +97,7 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
   }
 
   @throws[IllegalArgumentException]("if the index was negative")
-  override def withoutRow(r: Int): IndexedSeqTable[A] = {
-    checkBounds(r >= 0, "Index should be non-negative")
-    val newRows = rows.take(r) ++ rows.drop(r + 1)
-    new IndexedSeqTable(newRows)
-  }
-
-  @throws[IllegalArgumentException]("if the index was negative")
-  override def withoutCol(c: Int): IndexedSeqTable[A] = {
-    checkBounds(c >= 0, "Index should be non-negative")
-    val newRows = rows map (row =>
-      row.take(c) ++ row.drop(c + 1)
-    )
-    new IndexedSeqTable(newRows)
-  }
-
-  @throws[IllegalArgumentException]("if the index was negative")
-  def withRow[B >: A](r: Int, row: Map[Int, B]): IndexedSeqTable[B] = {
+  override def withRow[B >: A](r: Int, row: Map[Int, B]): IndexedSeqTable[B] = {
     checkBounds(r >= 0, "Index should be non-negative")
     val emptyRow = IndexedSeq.fill[Option[B]](row.keys.max + 1)(None)
     val newRow = row.foldLeft(emptyRow) {
@@ -123,7 +107,7 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
   }
 
   @throws[IllegalArgumentException]("if the index was negative")
-  def withCol[B >: A](c: Int, col: Map[Int, B]): IndexedSeqTable[B] = {
+  override def withCol[B >: A](c: Int, col: Map[Int, B]): IndexedSeqTable[B] = {
     checkBounds(c >= 0, "Index should be non-negative")
     val emptyCol = IndexedSeq.fill[Option[B]](col.keys.max + 1)(None)
     val newCol = col.foldLeft(emptyCol) {
@@ -145,6 +129,39 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     val newRows = rows zipAll (col, IndexedSeq.empty, None) map {
       case (row, cellOption) => row.padTo(c + 1, None).updated(c, cellOption)
     }
+    new IndexedSeqTable(newRows)
+  }
+
+  override def withInsertedRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedSeqTable[B] = {
+    checkBounds(r >= 0, "Index should be non-negative")
+    val paddedRows = rows.padTo(r, IndexedSeq.empty)
+    val newRows = (paddedRows.take(r) :+ row) ++ paddedRows.drop(r)
+    new IndexedSeqTable(newRows)
+  }
+
+  override def withInsertedCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedSeqTable[B] = {
+    checkBounds(c >= 0, "Index should be non-negative")
+    val newRows = rows zipAll (col, IndexedSeq.empty, None) map {
+      case (row, cellOption) =>
+        val paddedRow = row.padTo(c, None)
+        (paddedRow.take(c) :+ cellOption) ++ paddedRow.drop(c)
+    }
+    new IndexedSeqTable(newRows)
+  }
+
+  @throws[IllegalArgumentException]("if the index was negative")
+  override def withoutRow(r: Int): IndexedSeqTable[A] = {
+    checkBounds(r >= 0, "Index should be non-negative")
+    val newRows = rows.take(r) ++ rows.drop(r + 1)
+    new IndexedSeqTable(newRows)
+  }
+
+  @throws[IllegalArgumentException]("if the index was negative")
+  override def withoutCol(c: Int): IndexedSeqTable[A] = {
+    checkBounds(c >= 0, "Index should be non-negative")
+    val newRows = rows map (row =>
+      row.take(c) ++ row.drop(c + 1)
+    )
     new IndexedSeqTable(newRows)
   }
 
