@@ -1,6 +1,5 @@
 package org.fs.utility.collection.table
 
-import org.fs.utility.Implicits._
 import scala.collection.immutable.ListMap
 
 /**
