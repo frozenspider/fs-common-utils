@@ -4,10 +4,10 @@ package org.fs.utility
  * @author FS
  */
 class StopWatch {
-  val timestamp = System.currentTimeMillis
+  val startMs = System.currentTimeMillis
 
   def peek: Long =
-    System.currentTimeMillis - timestamp
+    System.currentTimeMillis - startMs
 }
 
 /**

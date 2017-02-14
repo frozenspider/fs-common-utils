@@ -6,9 +6,10 @@ import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class RichGeneralImplicitsSpec extends Spec {
-  import RichGeneralImplicits._
 
   object `rich throwable -` {
+    import RichGeneralImplicits.RichThrowable
+
     def `stackTraceString ` = {
       val t = new Throwable("My message")
       val s = t.stackTraceString
@@ -20,6 +21,8 @@ class RichGeneralImplicitsSpec extends Spec {
   }
 
   object `rich long -` {
+    import RichGeneralImplicits.RichLong
+
     def `hhMmSsString ` = {
       val h = 123L
       val m = 53L
