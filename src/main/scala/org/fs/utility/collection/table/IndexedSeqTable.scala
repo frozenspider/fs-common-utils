@@ -1,6 +1,6 @@
 package org.fs.utility.collection.table
 
-import org.fs.utility.Implicits._
+import org.fs.utility.collection.RichCollectionImplicits._
 
 class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     extends IndexedTable[A]

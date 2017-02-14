@@ -3,7 +3,7 @@ package org.fs.utility.collection.table
 import org.junit.runner.RunWith
 import org.scalatest.Spec
 import org.scalatest.junit.JUnitRunner
-import org.fs.utility.Implicits._
+import org.fs.utility.collection.RichCollectionImplicits._
 import scala.collection.immutable.ListMap
 
 @RunWith(classOf[JUnitRunner])
