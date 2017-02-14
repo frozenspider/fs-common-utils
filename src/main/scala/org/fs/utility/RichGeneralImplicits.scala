@@ -8,7 +8,7 @@ import java.io.PrintWriter
  *
  * @author FS
  */
-object RichGeneralImplicits {
+trait RichGeneralImplicits {
   /** Throwable enriched with some of most general support methods */
   implicit class RichThrowable[Th <: Throwable](th: Th) {
     /** @return stack trace printed to a string */
@@ -40,5 +40,6 @@ object RichGeneralImplicits {
       String.format("%d:%02d:%02d", hours: java.lang.Long, minutes: java.lang.Long, seconds: java.lang.Long)
     }
   }
-
 }
+
+object RichGeneralImplicits extends RichGeneralImplicits

@@ -15,7 +15,7 @@ import scala.collection.generic.{ CanBuildFrom => CBF }
  *
  * @author FS
  */
-object RichCollectionImplicits {
+trait RichCollectionImplicits {
 
   /** Iterable[X] enriched with some of most general support methods */
   implicit class RichIterable[A, Repr](iter: GIL[A, Repr]) {
@@ -119,3 +119,5 @@ object RichCollectionImplicits {
     }
   }
 }
+
+object RichCollectionImplicits extends RichCollectionImplicits
