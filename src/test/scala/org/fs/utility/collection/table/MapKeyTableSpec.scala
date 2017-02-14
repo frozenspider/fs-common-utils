@@ -649,12 +649,10 @@ class MapKeyTableSpec extends Spec {
     val result = els.zipWithIndex.foldLeft(table) {
       case (t, (row, r)) =>
         row.zipWithIndex.foldLeft(t) {
-          case (t, (el: A, ci)) =>
-            t + (r, colIndices(ci), el)
-          case (t, (el, _)) if el == null =>
-            t
-          case (_, (el, _)) =>
-            throw new IllegalArgumentException(s"Unexpected element in row $row: $el")
+          case (_, (el: Option[_], _))    => fail(s"Unexpected option in row $row: $el")
+          case (t, (el: A, ci))           => t + (r, colIndices(ci), el)
+          case (t, (el, _)) if el == null => t
+          case (_, (el, _))               => fail(s"Unexpected element in row $row: $el")
         }
     }
     result
