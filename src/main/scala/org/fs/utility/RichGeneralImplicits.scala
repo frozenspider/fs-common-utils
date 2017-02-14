@@ -19,24 +19,6 @@ object RichGeneralImplicits {
     }
   }
 
-  implicit class RichByteSeq(bs: Seq[Byte]) {
-    def toHexString: String = {
-      val sb = new StringBuilder(bs.length * 2)
-      for (b <- bs) {
-        val t = (if (b > 0) b else 256 + b).toHexString
-        if (t.length() == 1) {
-          sb.append("0")
-        }
-        if (t.length() == 3) {
-          sb.append("00")
-        } else {
-          sb.append(t)
-        }
-      }
-      sb.toString
-    }
-  }
-
   implicit class RichLong(l: Long) {
     /**
      * Pretty-printed version of a time between two events, in form {@code HH:mm:ss}, e.g. 112:35:16
