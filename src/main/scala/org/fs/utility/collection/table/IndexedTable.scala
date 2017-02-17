@@ -13,7 +13,8 @@ import scala.collection.immutable.ListMap
  * @see GenTableLike
  */
 trait IndexedTable[+A]
-    extends GenTableLike[Int, Int, A, IndexedTable, IndexedTable] {
+    extends GenTable[Int, Int, A]
+    with GenTableLike[Int, Int, A, IndexedTable, IndexedTable] {
 
   /** @return whether or not element with given index can be obtained from this table */
   override def isDefinedAt(r: Int, c: Int): Boolean = {

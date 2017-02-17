@@ -3,7 +3,8 @@ package org.fs.utility.collection.table
 import KeyTable.Curried
 
 trait KeyTable[RKT, CKT, +A]
-    extends GenTableLike[RKT, CKT, A, Curried[RKT, CKT]#Self, Curried[CKT, RKT]#Self] {
+    extends GenTable[RKT, CKT, A]
+    with GenTableLike[RKT, CKT, A, Curried[RKT, CKT]#Self, Curried[CKT, RKT]#Self] {
 
   //
   // Copy-update

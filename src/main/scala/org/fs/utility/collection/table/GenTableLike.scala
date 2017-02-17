@@ -2,6 +2,7 @@ package org.fs.utility.collection.table
 
 /**
  * Base trait for immutable table-like structures are two-dimensional sequences/maps.
+ *
  * Table structure can be represented as following:
  *
  * <pre>
@@ -18,12 +19,16 @@ package org.fs.utility.collection.table
  *  (R)
  * </pre>
  *
+ * Note that self-recursive type bounds are constrained in `GenTable` descending trait,
+ * which should be referred to instead of this one.
+ *
  * @author FS
  * @param RKT row key type
  * @param CKT column key type
  * @param A stored value type
- * @param SelfType self-recursive type of this table, used as a lower constraint for return types
- * @param TransposedType type of table after transposition
+ * @param SelfType (unbound) self-recursive type of this table, used as a lower constraint for return types
+ * @param TransposedType (unbound) type of table after transposition
+ * @see GenTable
  * @see IndexedTable
  * @see KeyTable
  */
@@ -183,64 +188,6 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2], +TransposedType[+A2]]
     mapWithIndex((_, _, v) => f(v))
 
   def mapWithIndex[B](f: (RKT, CKT, A) => B): SelfType[B]
-
-  //
-  // Standard
-  //
-
-  /**
-   * Outputs the table in the as pretty string like this:
-   * <pre>
-   * +--+-----+---+------+
-   * |  |c0   |c1 |c2    |
-   * +--+-----+---+------+
-   * |r0|first|row|values|
-   * +--+-----+---+------+
-   * |r1|col  |   |stuff |
-   * +--+-----+---+------+
-   * </pre>
-   */
-  override def toString: String = {
-    val keysToStringMap = this.elementsWithIndices.map({
-      case (r, c, null) => ((r, c), "null")
-      case (r, c, v)    => ((r, c), v.toString)
-    }).toMap
-    val maxColumnWidths: Seq[(Option[CKT], Int)] = {
-      val leftColumnWidth = Map(
-        None -> rowKeys.map(_.toString.length).max
-      )
-      val initialWidths = leftColumnWidth ++ colKeys.map(idx =>
-        Some(idx) -> idx.toString.length
-      ).toMap
-      val unordered = keysToStringMap.foldLeft(initialWidths) {
-        case (acc, ((_, c), str)) => acc updated (Some(c), acc(Some(c)) max str.length)
-      }
-      Seq(None -> unordered(None)) ++ (colKeys map Some.apply map (key => key -> unordered(key)))
-    }
-    val separatorString: String =
-      maxColumnWidths map ("-" * _._2) mkString ("+", "+", "+")
-    val lines: Seq[String] = {
-      def toPaddedString(a: Any, l: Int): String = {
-        a.toString.padTo(l, " ").mkString
-      }
-      val lineOne =
-        maxColumnWidths.toSeq map {
-          case (key, len) => toPaddedString(key getOrElse " ", len)
-        } mkString ("|", "|", "|")
-      lineOne +: this.rowKeys.map(r =>
-        maxColumnWidths map {
-          case (key, len) =>
-            val stringValue = key map (c => keysToStringMap get (r, c) getOrElse " ") getOrElse r
-            toPaddedString(stringValue, len)
-        } mkString ("|", "|", "|")
-      )
-    }
-    lines mkString (
-      separatorString + "\n",
-      "\n" + separatorString + "\n",
-      "\n" + separatorString
-    )
-  }
 
   //
   // Helpers
