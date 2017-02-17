@@ -41,7 +41,7 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     withValueOptionAt(r, c, Some(v))
   }
 
-  override def ++[B >: A, ST[+A2] <: GenTableLike[Int, Int, A2, ST, TT], TT[+A2] <: GenTableLike[Int, Int, A2, TT, ST]](that: GenTableLike[Int, Int, B, ST, TT]): IndexedSeqTable[B] = {
+  override def ++[B >: A](that: GenTableLike[Int, Int, B, ST forSome { type ST[+A2] }, TT forSome { type TT[+A2] }]): IndexedSeqTable[B] = {
     val thatRowCount = that.sizes._1
     val maxRowCount = thatRowCount max this.sizes._1
     val paddedRows = rows padTo (maxRowCount, IndexedSeq.empty[Option[B]])
@@ -81,14 +81,14 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
 
   override def swapRows(r1: Int, r2: Int): IndexedSeqTable[A] = {
     checkBounds(r1 >= 0 && r2 >= 0, "Indices should be non-negative")
-    checkBounds(r1 < sizes._1 && r2 < sizes._1, "Indices should less than row count")
+    checkBounds(r1 < sizes._1 && r2 < sizes._1, "Indices should be less than row count")
     val newRows = rows.updated(r1, rows(r2)).updated(r2, rows(r1))
     new IndexedSeqTable(newRows)
   }
 
   override def swapCols(c1: Int, c2: Int): IndexedSeqTable[A] = {
     checkBounds(c1 >= 0 && c2 >= 0, "Indices should be non-negative")
-    checkBounds(c1 < sizes._2 && c2 < sizes._2, "Indices should less than column count")
+    checkBounds(c1 < sizes._2 && c2 < sizes._2, "Indices should be less than column count")
     val newRows = rows map (col => {
       val padded = col.padTo((c1 max c2) + 1, None)
       padded.updated(c1, padded(c2)).updated(c2, padded(c1))

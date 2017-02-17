@@ -5,13 +5,13 @@ import org.scalatest.Spec
 import org.scalatest.junit.JUnitRunner
 import org.fs.utility.collection.RichCollectionImplicits._
 import scala.collection.immutable.ListMap
+import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnitRunner])
 class IndexedSeqTableSpec extends Spec {
   type IAEx = IllegalArgumentException
 
   val IST = IndexedSeqTable
-
   val ISeq = IndexedSeq
 
   def `empty table` = {
@@ -41,11 +41,11 @@ class IndexedSeqTableSpec extends Spec {
   }
 
   def `empty untrimmed table` = {
-    val table = IST.fromRows[Int](
+    val table = fromAnything[Int](
       Seq(
-        Seq(None, None),
-        Seq(None, None),
-        Seq(None, None)
+        Seq(null, null),
+        Seq(null, null),
+        Seq(null, null)
       )
     )
     assert(table.isEmpty)
@@ -85,15 +85,15 @@ class IndexedSeqTableSpec extends Spec {
 
     def `trailing empty values are not skipped` = {
       assert(
-        IST.fromRows(Seq(
-          Seq(Some(0), Some(1), Some(2), None),
-          Seq(Some(10), Some(11), Some(12)),
-          Seq(None),
+        fromAnything[Int](Seq(
+          Seq(0, 1, 2, null),
+          Seq(10, 11, 12),
+          Seq(null),
           Seq()
         )).sizes == (4, 4)
       )
       assert(
-        IST.fromValues[Int](Seq(
+        fromAnything[Int](Seq(
           Seq(0, 1, 2),
           Seq(10, 11, 12),
           Seq(),
@@ -104,9 +104,9 @@ class IndexedSeqTableSpec extends Spec {
   }
 
   object `2x3 dense table -` {
-    val table = IST.fromRows(Seq(
-      SeqOfSome(0, 1, 2),
-      SeqOfSome(10, 11, 12)
+    val table = fromAnything[Int](Seq(
+      Seq(0, 1, 2),
+      Seq(10, 11, 12)
     ))
 
     def `size and element getters` = {
@@ -145,76 +145,76 @@ class IndexedSeqTableSpec extends Spec {
     }
 
     def `transposition ` = {
-      assert(table.transpose == IST.fromRows(Seq(
-        SeqOfSome(0, 10),
-        SeqOfSome(1, 11),
-        SeqOfSome(2, 12)
+      assert(table.transpose == fromAnything[Int](Seq(
+        Seq(0, 10),
+        Seq(1, 11),
+        Seq(2, 12)
       )))
     }
 
     def `adding/replacing elements` = {
       val table2 = table + (0, 3, "x")
-      assert(table2 == IST.fromRows(Seq(
-        SeqOfSome(0, 1, 2, "x"),
-        SeqOfSome(10, 11, 12)
+      assert(table2 == fromAnything[Any](Seq(
+        Seq(0, 1, 2, "x"),
+        Seq(10, 11, 12)
       )))
       assert(table2.sizes == (2, 4))
 
       val table3 = table2 + (3, 0, "y")
-      assert(table3 == IST.fromRows(Seq(
-        SeqOfSome(0, 1, 2, "x"),
-        SeqOfSome(10, 11, 12),
-        SeqOfSome(),
-        SeqOfSome("y")
+      assert(table3 == fromAnything[Any](Seq(
+        Seq(0, 1, 2, "x"),
+        Seq(10, 11, 12),
+        Seq(),
+        Seq("y")
       )))
       assert(table3.sizes == (4, 4))
 
       val table4 = table3 + (0, 0, "z")
-      assert(table4 == IST.fromRows(Seq(
-        SeqOfSome("z", 1, 2, "x"),
-        SeqOfSome(10, 11, 12),
-        SeqOfSome(),
-        SeqOfSome("y")
+      assert(table4 == fromAnything[Any](Seq(
+        Seq("z", 1, 2, "x"),
+        Seq(10, 11, 12),
+        Seq(),
+        Seq("y")
       )))
       assert(table4.sizes == (4, 4))
 
       val table5 = table4 + (2, 2, "!")
-      assert(table5 == IST.fromRows(Seq(
-        SeqOfSome("z", 1, 2, "x"),
-        SeqOfSome(10, 11, 12),
-        Seq(None, None, Some("!")),
-        SeqOfSome("y")
+      assert(table5 == fromAnything[Any](Seq(
+        Seq("z", 1, 2, "x"),
+        Seq(10, 11, 12),
+        Seq(null, null, "!"),
+        Seq("y")
       )))
       assert(table5.sizes == (4, 4))
     }
 
     def `removing elements` = {
       val table2 = table - (0, 0)
-      assert(table2 == IST.fromRows(Seq(
-        Seq(None, Some(1), Some(2)),
-        Seq(Some(10), Some(11), Some(12))
+      assert(table2 == fromAnything[Int](Seq(
+        Seq(null, 1, 2),
+        Seq(10, 11, 12)
       )))
       assert(table2.sizes == (2, 3))
 
       val table3 = table2 - (0, 2)
-      assert(table3 == IST.fromRows(Seq(
-        Seq(None, Some(1)),
-        Seq(Some(10), Some(11), Some(12))
+      assert(table3 == fromAnything[Int](Seq(
+        Seq(null, 1),
+        Seq(10, 11, 12)
       )))
       assert(table3.sizes == (2, 3))
 
       val table4 = table3 - (1, 2)
-      assert(table4 == IST.fromRows(Seq(
-        Seq(None, Some(1), None),
-        Seq(Some(10), Some(11), None)
+      assert(table4 == fromAnything[Int](Seq(
+        Seq(null, 1, null),
+        Seq(10, 11, null)
       )))
       assert(table4.sizes == (2, 3))
       assert(table4.trim.sizes == (2, 2))
 
       val table5 = table4 - (1, 0) - (1, 1)
-      assert(table5 == IST.fromRows(Seq(
-        Seq(None, Some(1), None),
-        Seq(None, None, None)
+      assert(table5 == fromAnything[Int](Seq(
+        Seq(null, 1, null),
+        Seq(null, null, null)
       )))
       assert(table5.sizes == (2, 3))
       assert(table5.trim.sizes == (1, 2))
@@ -228,27 +228,27 @@ class IndexedSeqTableSpec extends Spec {
     def `concatenating tables` = {
       assert(
         table
-          ++ IST.fromRows(Seq(
-            Seq(None, Some("x"))
+          ++ fromAnything[String](Seq(
+            Seq(null, "x")
           ))
-          == IST.fromRows(Seq(
-            SeqOfSome(0, "x", 2),
-            SeqOfSome(10, 11, 12)
+          == fromAnything[Any](Seq(
+            Seq(0, "x", 2),
+            Seq(10, 11, 12)
           ))
       )
       assert(
         table
-          ++ IST.fromRows(Seq(
+          ++ fromAnything[String](Seq(
             Seq(),
             Seq(),
             Seq(),
-            Seq(None, Some("x"))
+            Seq(null, "x")
           ))
-          == IST.fromRows(Seq(
-            SeqOfSome(0, 1, 2),
-            SeqOfSome(10, 11, 12),
-            SeqOfSome(),
-            Seq(None, Some("x"))
+          == fromAnything[Any](Seq(
+            Seq(0, 1, 2),
+            Seq(10, 11, 12),
+            Seq(),
+            Seq(null, "x")
           ))
       )
     }
@@ -303,30 +303,30 @@ class IndexedSeqTableSpec extends Spec {
 
       def `filter ` = {
         val tableOfOdds = table.filter(_ % 2 != 0)
-        assert(tableOfOdds == IST.fromRows(Seq(
-          Seq(None, Some(1), None),
-          Seq(None, Some(11), None)
+        assert(tableOfOdds == fromAnything[Int](Seq(
+          Seq(null, 1, null),
+          Seq(null, 11, null)
         )))
-        assert(tableOfOdds.filter(_ < 10) == IST.fromRows(Seq(
-          Seq(None, Some(1), None),
-          Seq(None, None, None)
+        assert(tableOfOdds.filter(_ < 10) == fromAnything[Int](Seq(
+          Seq(null, 1, null),
+          Seq(null, null, null)
         )))
-        assert(tableOfOdds.filter(_ > 10) == IST.fromRows(Seq(
-          Seq(None, None, None),
-          Seq(None, Some(11), None)
+        assert(tableOfOdds.filter(_ > 10) == fromAnything[Int](Seq(
+          Seq(null, null, null),
+          Seq(null, 11, null)
         )))
       }
 
       def `map and mapWithIndex` = {
-        assert(table.map(_ * 10) == IST.fromRows(Seq(
-          SeqOfSome(0, 10, 20),
-          SeqOfSome(100, 110, 120)
+        assert(table.map(_ * 10) == fromAnything[Int](Seq(
+          Seq(0, 10, 20),
+          Seq(100, 110, 120)
         )))
         assert(table.mapWithIndex{
           case (r, c, v) => (r * 1000) + (c * 100) + v
-        } == IST.fromRows(Seq(
-          SeqOfSome(0, 101, 202),
-          SeqOfSome(1010, 1111, 1212)
+        } == fromAnything[Int](Seq(
+          Seq(0, 101, 202),
+          Seq(1010, 1111, 1212)
         )))
       }
     }
@@ -389,159 +389,159 @@ class IndexedSeqTableSpec extends Spec {
       }
 
       def `replace row (map)` = {
-        assert(table.withRow(0, SeqOfSome("x", "y", "z").toDefinedMap) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z"),
-          SeqOfSome(10, 11, 12)
+        assert(table.withRow(0, SeqOfSome("x", "y", "z").toDefinedMap) == fromAnything[Any](Seq(
+          Seq("x", "y", "z"),
+          Seq(10, 11, 12)
         )))
-        assert(table.withRow(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z", "!"),
-          SeqOfSome(10, 11, 12)
+        assert(table.withRow(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) == fromAnything[Any](Seq(
+          Seq("x", "y", "z", "!"),
+          Seq(10, 11, 12)
         )))
         assert(table
           .withRow(0, SeqOfSome("x", "y").toDefinedMap)
           .withRow(1, SeqOfSome("z", "!").toDefinedMap)
-          == IST.fromRows(Seq(
-            SeqOfSome("x", "y"),
-            SeqOfSome("z", "!")
+          == fromAnything[String](Seq(
+            Seq("x", "y"),
+            Seq("z", "!")
           )))
-        assert(table.withRow(0, ISeq(Some("x"), Some("y"), Some("z")).toDefinedMap) == IST.fromRows(Seq(
-          Seq(Some("x"), Some("y"), Some("z")),
-          Seq(Some(10), Some(11), Some(12))
+        assert(table.withRow(0, ISeq(Some("x"), Some("y"), Some("z")).toDefinedMap) == fromAnything[Any](Seq(
+          Seq("x", "y", "z"),
+          Seq(10, 11, 12)
         )))
       }
 
       def `replace row (seq)` = {
-        assert(table.withRow(0, SeqOfSome("x", "y", "z")) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z"),
-          SeqOfSome(10, 11, 12)
+        assert(table.withRow(0, SeqOfSome("x", "y", "z")) == fromAnything[Any](Seq(
+          Seq("x", "y", "z"),
+          Seq(10, 11, 12)
         )))
-        assert(table.withRow(0, SeqOfSome("x", "y", "z", "!")) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z", "!"),
-          SeqOfSome(10, 11, 12)
+        assert(table.withRow(0, SeqOfSome("x", "y", "z", "!")) == fromAnything[Any](Seq(
+          Seq("x", "y", "z", "!"),
+          Seq(10, 11, 12)
         )))
         assert(table
           .withRow(0, SeqOfSome("x", "y"))
           .withRow(1, SeqOfSome("z", "!"))
-          == IST.fromRows(Seq(
-            SeqOfSome("x", "y"),
-            SeqOfSome("z", "!")
+          == fromAnything[String](Seq(
+            Seq("x", "y"),
+            Seq("z", "!")
           )))
-        assert(table.withRow(0, ISeq(Some("x"), Some("y"), Some("z"), None, None)) == IST.fromRows(Seq(
-          Seq(Some("x"), Some("y"), Some("z"), None, None),
-          Seq(Some(10), Some(11), Some(12), None, None)
+        assert(table.withRow(0, ISeq(Some("x"), Some("y"), Some("z"), None, None)) == fromAnything[Any](Seq(
+          Seq("x", "y", "z", null, null),
+          Seq(10, 11, 12, null, null)
         )))
       }
 
       def `insert row` = {
-        assert(table.withInsertedRow(0, SeqOfSome("x", "y", "z")) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z"),
-          SeqOfSome(0, 1, 2),
-          SeqOfSome(10, 11, 12)
+        assert(table.withInsertedRow(0, SeqOfSome("x", "y", "z")) == fromAnything[Any](Seq(
+          Seq("x", "y", "z"),
+          Seq(0, 1, 2),
+          Seq(10, 11, 12)
         )))
-        assert(table.withInsertedRow(2, SeqOfSome("x", "y", "z")) == IST.fromRows(Seq(
-          SeqOfSome(0, 1, 2),
-          SeqOfSome(10, 11, 12),
-          SeqOfSome("x", "y", "z")
+        assert(table.withInsertedRow(2, SeqOfSome("x", "y", "z")) == fromAnything[Any](Seq(
+          Seq(0, 1, 2),
+          Seq(10, 11, 12),
+          Seq("x", "y", "z")
         )))
-        assert(table.withInsertedRow(3, SeqOfSome("x", "y", "z")) == IST.fromRows(Seq(
-          SeqOfSome(0, 1, 2),
-          SeqOfSome(10, 11, 12),
-          SeqOfSome(),
-          SeqOfSome("x", "y", "z")
+        assert(table.withInsertedRow(3, SeqOfSome("x", "y", "z")) == fromAnything[Any](Seq(
+          Seq(0, 1, 2),
+          Seq(10, 11, 12),
+          Seq(),
+          Seq("x", "y", "z")
         )))
-        assert(table.withInsertedRow(0, SeqOfSome("x", "y", "z", "!")) == IST.fromRows(Seq(
-          SeqOfSome("x", "y", "z", "!"),
-          SeqOfSome(0, 1, 2),
-          SeqOfSome(10, 11, 12)
+        assert(table.withInsertedRow(0, SeqOfSome("x", "y", "z", "!")) == fromAnything[Any](Seq(
+          Seq("x", "y", "z", "!"),
+          Seq(0, 1, 2),
+          Seq(10, 11, 12)
         )))
         assert(table
           .withInsertedRow(0, SeqOfSome("x", "y"))
           .withInsertedRow(1, SeqOfSome("z", "!"))
-          == IST.fromRows(Seq(
-            SeqOfSome("x", "y"),
-            SeqOfSome("z", "!"),
-            SeqOfSome(0, 1, 2),
-            SeqOfSome(10, 11, 12)
+          == fromAnything[Any](Seq(
+            Seq("x", "y"),
+            Seq("z", "!"),
+            Seq(0, 1, 2),
+            Seq(10, 11, 12)
           )))
-        assert(table.withInsertedRow(0, ISeq(Some("x"), Some("y"), Some("z"), None, None)) == IST.fromRows(Seq(
-          Seq(Some("x"), Some("y"), Some("z"), None, None),
-          Seq(Some(0), Some(1), Some(2), None, None),
-          Seq(Some(10), Some(11), Some(12), None, None)
+        assert(table.withInsertedRow(0, ISeq(Some("x"), Some("y"), Some("z"), None, None)) == fromAnything[Any](Seq(
+          Seq("x", "y", "z", null, null),
+          Seq(0, 1, 2, null, null),
+          Seq(10, 11, 12, null, null)
         )))
       }
 
       def `replace col (map)` = {
-        assert(table.withCol(0, SeqOfSome("x", "y").toDefinedMap) == IST.fromValues(Seq(
+        assert(table.withCol(0, SeqOfSome("x", "y").toDefinedMap) == fromAnything[Any](Seq(
           Seq("x", 1, 2),
           Seq("y", 11, 12)
         )))
-        assert(table.withCol(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) == IST.fromValues(Seq(
+        assert(table.withCol(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) == fromAnything[Any](Seq(
           Seq("x", 1, 2),
           Seq("y", 11, 12),
           Seq("z"),
           Seq("!")
         )))
         assert(table.withCol(4, SeqOfSome("x", "y").toDefinedMap)
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y"))
+          == fromAnything[Any](Seq(
+            Seq(0, 1, 2, null, "x"),
+            Seq(10, 11, 12, null, "y")
           )))
         assert(table.withCol(4, ISeq(Some("x"), Some("y"), None, None, None).toDefinedMap)
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y"))
+          == fromAnything[Any](Seq(
+            Seq(0, 1, 2, null, "x"),
+            Seq(10, 11, 12, null, "y")
           )))
       }
 
       def `replace col (seq)` = {
-        assert(table.withCol(0, SeqOfSome("x", "y")) == IST.fromValues(Seq(
+        assert(table.withCol(0, SeqOfSome("x", "y")) == fromAnything[Any](Seq(
           Seq("x", 1, 2),
           Seq("y", 11, 12)
         )))
-        assert(table.withCol(0, SeqOfSome("x", "y", "z", "!")) == IST.fromValues(Seq(
+        assert(table.withCol(0, SeqOfSome("x", "y", "z", "!")) == fromAnything[Any](Seq(
           Seq("x", 1, 2),
           Seq("y", 11, 12),
           Seq("z"),
           Seq("!")
         )))
         assert(table.withCol(4, SeqOfSome("x", "y"))
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y"))
+          == fromAnything[Any](Seq(
+            Seq(0, 1, 2, null, "x"),
+            Seq(10, 11, 12, null, "y")
           )))
         assert(table.withCol(4, ISeq(Some("x"), Some("y"), None, None, None))
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y")),
-            Seq(None, None, None, None, None),
-            Seq(None, None, None, None, None),
-            Seq(None, None, None, None, None)
+          == fromAnything[Any](Seq(
+            Seq(0, 1, 2, null, "x"),
+            Seq(10, 11, 12, null, "y"),
+            Seq(null, null, null, null, null),
+            Seq(null, null, null, null, null),
+            Seq(null, null, null, null, null)
           )))
       }
 
       def `insert col` = {
-        assert(table.withInsertedCol(0, SeqOfSome("x", "y")) == IST.fromValues(Seq(
+        assert(table.withInsertedCol(0, SeqOfSome("x", "y")) == fromAnything[Any](Seq(
           Seq("x", 0, 1, 2),
           Seq("y", 10, 11, 12)
         )))
-        assert(table.withInsertedCol(0, SeqOfSome("x", "y", "z", "!")) == IST.fromValues(Seq(
+        assert(table.withInsertedCol(0, SeqOfSome("x", "y", "z", "!")) == fromAnything[Any](Seq(
           Seq("x", 0, 1, 2),
           Seq("y", 10, 11, 12),
           Seq("z"),
           Seq("!")
         )))
         assert(table.withInsertedCol(4, SeqOfSome("x", "y"))
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y"))
+          == fromAnything[Any](Seq(
+            Seq(0, 1, 2, null, "x"),
+            Seq(10, 11, 12, null, "y")
           )))
         assert(table.withInsertedCol(4, ISeq(Some("x"), Some("y"), None, None, None))
-          == IST.fromRows(Seq(
-            Seq(Some(0), Some(1), Some(2), None, Some("x")),
-            Seq(Some(10), Some(11), Some(12), None, Some("y")),
-            Seq(None, None, None, None, None),
-            Seq(None, None, None, None, None),
-            Seq(None, None, None, None, None)
+          == fromAnything[Any](Seq(
+            Seq(0, 1, 2, null, "x"),
+            Seq(10, 11, 12, null, "y"),
+            Seq(null, null, null, null, null),
+            Seq(null, null, null, null, null),
+            Seq(null, null, null, null, null)
           )))
       }
 
@@ -551,18 +551,18 @@ class IndexedSeqTableSpec extends Spec {
         assert(table.swapCols(0, 0) == table)
         assert(table.swapCols(1, 1) == table)
         assert(table.swapCols(2, 2) == table)
-        assert(table.swapRows(0, 1) == IST.fromRows(Seq(
-          SeqOfSome(10, 11, 12),
-          SeqOfSome(0, 1, 2)
+        assert(table.swapRows(0, 1) == fromAnything[Int](Seq(
+          Seq(10, 11, 12),
+          Seq(0, 1, 2)
         )))
         assert(table.swapRows(0, 1) == table.swapRows(1, 0))
-        assert(table.swapCols(0, 1) == IST.fromRows(Seq(
-          SeqOfSome(1, 0, 2),
-          SeqOfSome(11, 10, 12)
+        assert(table.swapCols(0, 1) == fromAnything[Int](Seq(
+          Seq(1, 0, 2),
+          Seq(11, 10, 12)
         )))
-        assert(table.swapCols(0, 2) == IST.fromRows(Seq(
-          SeqOfSome(2, 1, 0),
-          SeqOfSome(12, 11, 10)
+        assert(table.swapCols(0, 2) == fromAnything[Int](Seq(
+          Seq(2, 1, 0),
+          Seq(12, 11, 10)
         )))
         intercept[IAEx] {
           table.swapRows(0, 2)
@@ -573,19 +573,19 @@ class IndexedSeqTableSpec extends Spec {
       }
 
       def `sort rows` = {
-        val table = IST.fromValues(Seq(
+        val table = fromAnything[String](Seq(
           Seq("d", "1"),
           Seq("c", "2"),
           Seq("a", "4"),
           Seq("b", "3")
         ))
-        assert(table.sortRowsBy(k => table.row(k)(0)) == IST.fromValues(Seq(
+        assert(table.sortRowsBy(k => table.row(k)(0)) == fromAnything[String](Seq(
           Seq("a", "4"),
           Seq("b", "3"),
           Seq("c", "2"),
           Seq("d", "1")
         )))
-        assert(table.sortRowsBy(k => table.row(k)(1)) == IST.fromValues(Seq(
+        assert(table.sortRowsBy(k => table.row(k)(1)) == fromAnything[String](Seq(
           Seq("d", "1"),
           Seq("c", "2"),
           Seq("b", "3"),
@@ -594,15 +594,15 @@ class IndexedSeqTableSpec extends Spec {
       }
 
       def `sort cols` = {
-        val table = IST.fromValues(Seq(
+        val table = fromAnything[String](Seq(
           Seq("d", "b", "a", "c"),
           Seq("1", "3", "4", "2")
         ))
-        assert(table.sortColsBy(k => table.col(k)(0)) == IST.fromValues(Seq(
+        assert(table.sortColsBy(k => table.col(k)(0)) == fromAnything[String](Seq(
           Seq("a", "b", "c", "d"),
           Seq("4", "3", "2", "1")
         )))
-        assert(table.sortColsBy(k => table.col(k)(1)) == IST.fromValues(Seq(
+        assert(table.sortColsBy(k => table.col(k)(1)) == fromAnything[String](Seq(
           Seq("d", "c", "b", "a"),
           Seq("1", "2", "3", "4")
         )))
@@ -610,54 +610,76 @@ class IndexedSeqTableSpec extends Spec {
     }
   }
 
-  object `2x3 sparse table -` {
-    val table = IST.fromRows(Seq(
-      Seq(Some(0), Some(1), None, None),
-      Seq(None, Some(11), None),
-      Seq(None)
+  object `3x4 sparse table -` {
+    val table = fromAnything[Int](Seq(
+      Seq(0, 1, null, null),
+      Seq(null, 11, null),
+      Seq(null)
     ))
 
     def `equals when constructed with padding` = {
       val table2 =
-        assert(table == IST.fromRows(Seq(
-          Seq(Some(0), Some(1), None),
-          Seq(None, Some(11)),
-          Seq(None, None, None, None)
+        assert(table == fromAnything[Int](Seq(
+          Seq(0, 1, null),
+          Seq(null, 11),
+          Seq(null, null, null, null)
         )))
     }
 
     def `transposition ` = {
-      assert(table.transpose == IST.fromRows(Seq(
-        Seq(Some(0), None, None),
-        Seq(Some(1), Some(11), None),
-        Seq(None, None, None),
-        Seq(None, None, None)
+      assert(table.transpose == fromAnything[Int](Seq(
+        Seq(0, null, null),
+        Seq(1, 11, null),
+        Seq(null, null, null),
+        Seq(null, null, null)
       )))
     }
 
     def `swap ` = {
-      assert(table.swapRows(0, 1) == IST.fromRows(Seq(
-        Seq(None, Some(11), None),
-        Seq(Some(0), Some(1), None, None),
-        Seq(None)
-      )))
       assert(table.swapRows(0, 1) == table.swapRows(1, 0))
-      assert(table.swapCols(0, 1) == IST.fromRows(Seq(
-        Seq(Some(1), Some(0), None, None),
-        Seq(Some(11), None, None),
-        Seq(None)
+      assert(table.swapCols(0, 1) == table.swapCols(1, 0))
+      assert(table.swapRows(0, 1) == fromAnything[Int](Seq(
+        Seq(null, 11, null),
+        Seq(0, 1, null, null),
+        Seq(null)
       )))
-      assert(table.swapCols(0, 2) == IST.fromRows(Seq(
-        Seq(None, Some(1), Some(0), None),
-        Seq(None, Some(11), None),
-        Seq(None)
+      assert(table.swapCols(0, 1) == fromAnything[Int](Seq(
+        Seq(1, 0, null, null),
+        Seq(11, null, null),
+        Seq(null)
       )))
+      assert(table.swapCols(0, 2) == fromAnything[Int](Seq(
+        Seq(null, 1, 0, null),
+        Seq(null, 11, null),
+        Seq(null)
+      )))
+    }
+
+    def `string representation` = {
+      assert(table.toString == """|+-+-+--+-+-+
+                                  || |0|1 |2|3|
+                                  |+-+-+--+-+-+
+                                  ||0|0|1 | | |
+                                  |+-+-+--+-+-+
+                                  ||1| |11| | |
+                                  |+-+-+--+-+-+
+                                  ||2| |  | | |
+                                  |+-+-+--+-+-+""".stripMargin)
     }
   }
 
   //
   // Helpers
   //
+
+  private def fromAnything[A: ClassTag](vals: Seq[Seq[Any]]): IndexedSeqTable[A] = {
+    IST.fromRows[A](vals.map(_.map {
+      case null         => None
+      case v: Option[_] => fail(s"Unexpected option: $v")
+      case v: A         => Some(v)
+      case v            => fail(s"Unexpected element: $v")
+    }))
+  }
 
   private def SeqOfSome[A](as: A*): IndexedSeq[Option[A]] = {
     IndexedSeq(as: _*).map(Some.apply)

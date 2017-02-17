@@ -13,7 +13,8 @@ import scala.collection.immutable.ListMap
  * @see GenTableLike
  */
 trait IndexedTable[+A]
-    extends GenTableLike[Int, Int, A, IndexedTable, IndexedTable] {
+    extends GenTable[Int, Int, A]
+    with GenTableLike[Int, Int, A, IndexedTable, IndexedTable] {
 
   /** @return whether or not element with given index can be obtained from this table */
   override def isDefinedAt(r: Int, c: Int): Boolean = {
@@ -44,19 +45,39 @@ trait IndexedTable[+A]
   /** @throws IllegalArgumentException if c is negative or is greater than columns count */
   def colAsSeq(c: Int): IndexedSeq[Option[A]]
 
-  /** Adds/replaces the sequence-bassed row in the table. Empty trailing elements are NOT trimmed. */
+  /** Adds/replaces the row in the table, padding table if necessary. */
+  @throws[IllegalArgumentException]("if the index was negative")
+  override def withRow[B >: A](r: Int, row: Map[Int, B]): IndexedTable[B]
+
+  /** Adds/replaces the column in the table, padding table if necessary. */
+  @throws[IllegalArgumentException]("if the index was negative")
+  override def withCol[B >: A](c: Int, col: Map[Int, B]): IndexedTable[B]
+
+  /**
+   * Adds/replaces the sequence-bassed row in the table, padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
   @throws[IllegalArgumentException]("if the index was negative")
   def withRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedTable[B]
 
-  /** Adds/replaces the sequence-bassed column in the table. Empty trailing elements are NOT trimmed. */
+  /**
+   * Adds/replaces the sequence-bassed column in the table, padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
   @throws[IllegalArgumentException]("if the index was negative")
   def withCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedTable[B]
 
-  /** Inserts the sequence-bassed row in the table, causing rows shift. Empty trailing elements are NOT trimmed. */
+  /**
+   * Inserts the sequence-bassed row in the table, causing rows shift and padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
   @throws[IllegalArgumentException]("if the index was negative")
   def withInsertedRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedTable[B]
 
-  /** Inserts the sequence-bassed column in the table, causing columns shift. Empty trailing elements are NOT trimmed. */
+  /**
+   * Inserts the sequence-bassed column in the table, causing columns shift and padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
   @throws[IllegalArgumentException]("if the index was negative")
   def withInsertedCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedTable[B]
 
@@ -74,14 +95,38 @@ trait IndexedTable[+A]
   def trim: IndexedTable[A]
 
   //
+  // Sorting and rearrangement
+  //
+
+  def sortRowsBy[B](f: Int => B)(implicit ord: Ordering[B]): IndexedTable[A] = {
+    def exchange(t: IndexedTable[A], k1: Int, k2: Int): IndexedTable[A] =
+      t.swapRows(k1, k2)
+    GenTableLike.sortLinesBy[Int, Int, IndexedTable[A]](this, rowKeys, exchange)(ord on f)
+  }
+
+  def sortColsBy[B](f: Int => B)(implicit ord: Ordering[B]): IndexedTable[A] = {
+    def exchange(t: IndexedTable[A], k1: Int, k2: Int): IndexedTable[A] =
+      t.swapCols(k1, k2)
+    GenTableLike.sortLinesBy[Int, Int, IndexedTable[A]](this, colKeys, exchange)(ord on f)
+  }
+
+  //
   // Standard
   //
 
+  /** Two tables are considered equal when they have the same sizes, ordered keys and elements */
   override def equals(o: Any): Boolean = o match {
     case that: IndexedTable[_] =>
-      super.equals(that)
+      this.sizes == that.sizes &&
+        this.rowKeys == that.rowKeys &&
+        this.colKeys == that.colKeys &&
+        this.elementsWithIndices == that.elementsWithIndices
     case _ =>
       false
+  }
+
+  override lazy val hashCode: Int = {
+    7 * rowKeys.hashCode + 11 * colKeys.hashCode + 13 * elements.hashCode
   }
 }
 
