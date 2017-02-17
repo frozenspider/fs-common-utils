@@ -31,6 +31,7 @@ class MapKeyTableSpec extends Spec {
     intercept[IAEx]{ table((0, "a")) }
     assert(table.row(0) === LM.empty)
     assert(table.col("a") === LM.empty)
+    assert(table.toString() === "+")
   }
 
   def `empty untrimmed table` = {

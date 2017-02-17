@@ -40,6 +40,7 @@ class IndexedSeqTableSpec extends Spec {
     assert(table.col(-1) === ListMap.empty)
     assert(table.rowAsSeq(-1) === IndexedSeq.empty)
     assert(table.colAsSeq(-1) === IndexedSeq.empty)
+    assert(table.toString() === "+")
   }
 
   def `empty untrimmed table` = {
