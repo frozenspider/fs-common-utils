@@ -41,7 +41,7 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     withValueOptionAt(r, c, Some(v))
   }
 
-  override def ++[B >: A, ST[+A2] <: GenTableLike[Int, Int, A2, ST, TT], TT[+A2] <: GenTableLike[Int, Int, A2, TT, ST]](that: GenTableLike[Int, Int, B, ST, TT]): IndexedSeqTable[B] = {
+  override def ++[B >: A](that: GenTableLike[Int, Int, B, ST forSome { type ST[+A2] }, TT forSome { type TT[+A2] }]): IndexedSeqTable[B] = {
     val thatRowCount = that.sizes._1
     val maxRowCount = thatRowCount max this.sizes._1
     val paddedRows = rows padTo (maxRowCount, IndexedSeq.empty[Option[B]])

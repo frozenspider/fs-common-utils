@@ -27,7 +27,7 @@ package org.fs.utility.collection.table
  * @see IndexedTable
  * @see KeyTable
  */
-trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, SelfType, TransposedType], +TransposedType[+A2] <: GenTableLike[CKT, RKT, A2, TransposedType, SelfType]]
+trait GenTableLike[RKT, CKT, +A, +SelfType[+A2], +TransposedType[+A2]]
     extends PartialFunction[(RKT, CKT), A] { self: SelfType[A] =>
 
   type RowType[+A2] = Map[CKT, A2]
@@ -137,7 +137,7 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
   // These type arguments are a hack for non-parametrizable nature of _
   // See https://issues.scala-lang.org/browse/SI-8039
   /** @return table with added/replaced values */
-  def ++[B >: A, ST[+A2] <: GenTableLike[RKT, CKT, A2, ST, TT], TT[+A2] <: GenTableLike[CKT, RKT, A2, TT, ST]](that: GenTableLike[RKT, CKT, B, ST, TT]): SelfType[B]
+  def ++[B >: A](that: GenTableLike[RKT, CKT, B, ST forSome { type ST[+A2] }, TT forSome { type TT[+A2] }]): SelfType[B]
 
   /** @return table without value at a given position (NOT dropping empty rows/columns) */
   final def -(rc: (RKT, CKT)): SelfType[A] = {
@@ -201,9 +201,10 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
    * </pre>
    */
   override def toString: String = {
-    val stringTable = this map (v =>
-      if (v != null) v.toString else "null"
-    )
+    val keysToStringMap = this.elementsWithIndices.map({
+      case (r, c, null) => ((r, c), "null")
+      case (r, c, v)    => ((r, c), v.toString)
+    }).toMap
     val maxColumnWidths: Seq[(Option[CKT], Int)] = {
       val leftColumnWidth = Map(
         None -> rowKeys.map(_.toString.length).max
@@ -211,8 +212,8 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
       val initialWidths = leftColumnWidth ++ colKeys.map(idx =>
         Some(idx) -> idx.toString.length
       ).toMap
-      val unordered = stringTable.elementsWithIndices.foldLeft(initialWidths) {
-        case (acc, (_, c, str)) => acc updated (Some(c), acc(Some(c)) max str.length)
+      val unordered = keysToStringMap.foldLeft(initialWidths) {
+        case (acc, ((_, c), str)) => acc updated (Some(c), acc(Some(c)) max str.length)
       }
       Seq(None -> unordered(None)) ++ (colKeys map Some.apply map (key => key -> unordered(key)))
     }
@@ -224,12 +225,12 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2] <: GenTableLike[RKT, CKT, A2, Se
       }
       val lineOne =
         maxColumnWidths.toSeq map {
-          case (key, len) => toPaddedString(key.getOrElse(" "), len)
+          case (key, len) => toPaddedString(key getOrElse " ", len)
         } mkString ("|", "|", "|")
-      lineOne +: stringTable.rowKeys.map(r =>
+      lineOne +: this.rowKeys.map(r =>
         maxColumnWidths map {
           case (key, len) =>
-            val stringValue = key.map(stringTable.get(r, _).getOrElse(" ")).getOrElse(r)
+            val stringValue = key map (c => keysToStringMap get (r, c) getOrElse " ") getOrElse r
             toPaddedString(stringValue, len)
         } mkString ("|", "|", "|")
       )

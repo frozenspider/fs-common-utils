@@ -101,7 +101,7 @@ class MapKeyTable[RKT, CKT, +A] private (
     new MapKeyTable(rows2, (rowKeys :+ r).distinct, (colKeys :+ c).distinct)
   }
 
-  override def ++[B >: A, ST[+A2] <: GenTableLike[RKT, CKT, A2, ST, TT], TT[+A2] <: GenTableLike[CKT, RKT, A2, TT, ST]](that: GenTableLike[RKT, CKT, B, ST, TT]): MapKeyTable[RKT, CKT, B] = {
+  override def ++[B >: A](that: GenTableLike[RKT, CKT, B, ST forSome { type ST[+A2] }, TT forSome { type TT[+A2] }]): MapKeyTable[RKT, CKT, B] = {
     val thatElements = that.elementsWithIndices
     val thatRows = thatElements.groupBy(_._1) map {
       case (r, rowEls) => r -> rowEls.map(tuple => tuple._2 -> tuple._3).toMap

@@ -192,35 +192,35 @@ class MapKeyTableSpec extends Spec {
     }
 
     def `concatenating tables` = {
-      fail("http://stackoverflow.com/questions/42166770/inheritance-and-self-recursive-type-inference")
-      //      val t2 = intStringMKT[Any](Seq(
-      //        Seq(null, "x")
-      //      ))
-      //      assert(
-      //        table
-      //          ++ intStringMKT[Any](Seq(
-      //            Seq(null, "x")
-      //          ))
-      //          == intStringMKT(Seq(
-      //            Seq(0, "x", 2),
-      //            Seq(10, 11, 12)
-      //          ))
-      //      )
-      //      assert(
-      //        table
-      //          ++ IST.fromRows(Seq(
-      //            Seq(),
-      //            Seq(),
-      //            Seq(),
-      //            Seq(None, Some("x"))
-      //          ))
-      //          == IST.fromRows(Seq(
-      //            SeqOfSome(0, 1, 2),
-      //            SeqOfSome(10, 11, 12),
-      //            SeqOfSome(),
-      //            Seq(None, Some("x"))
-      //          ))
-      //      )
+      val t1 = table
+      val t2 = intStringMKT[Any](Seq(
+        Seq(null, "x")
+      ))
+      assert(
+        table
+          ++ intStringMKT[String](Seq(
+            Seq(null, "x")
+          ))
+          == intStringMKT[Any](Seq(
+            Seq(0, "x", 2),
+            Seq(10, 11, 12)
+          ))
+      )
+      assert(
+        table
+          ++ intStringMKT[String](Seq(
+            Seq(),
+            Seq(),
+            Seq(),
+            Seq(null, "x")
+          ))
+          == intStringMKT[Any](Seq(
+            Seq(0, 1, 2),
+            Seq(10, 11, 12),
+            Seq(),
+            Seq(null, "x")
+          ))
+      )
     }
 
     def `equality ` = {

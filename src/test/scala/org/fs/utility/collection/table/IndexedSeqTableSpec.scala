@@ -610,7 +610,7 @@ class IndexedSeqTableSpec extends Spec {
     }
   }
 
-  object `2x3 sparse table -` {
+  object `3x4 sparse table -` {
     val table = fromAnything[Int](Seq(
       Seq(0, 1, null, null),
       Seq(null, 11, null),
@@ -653,6 +653,18 @@ class IndexedSeqTableSpec extends Spec {
         Seq(null, 11, null),
         Seq(null)
       )))
+    }
+
+    def `string representation` = {
+      assert(table.toString == """|+-+-+--+-+-+
+                                  || |0|1 |2|3|
+                                  |+-+-+--+-+-+
+                                  ||0|0|1 | | |
+                                  |+-+-+--+-+-+
+                                  ||1| |11| | |
+                                  |+-+-+--+-+-+
+                                  ||2| |  | | |
+                                  |+-+-+--+-+-+""".stripMargin)
     }
   }
 
