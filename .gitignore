@@ -9,8 +9,7 @@
 target/
 src_managed/
 lib_managed/
-project/target/
-project/project/
+project/
 
 *.class
 *.log
