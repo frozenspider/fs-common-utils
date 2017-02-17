@@ -10,14 +10,6 @@ trait KeyTable[RKT, CKT, +A]
   // Copy-update
   //
 
-  /** @see withRow */
-  override def withEmptyRow(r: RKT): KeyTable[RKT, CKT, A] =
-    withRow(r, Map.empty)
-
-  /** @see withCol */
-  override def withEmptyCol(c: CKT): KeyTable[RKT, CKT, A] =
-    withCol(c, Map.empty)
-
   /**
    * Adds/replaces the given row in the table, potentically increasing row count by 1.
    *

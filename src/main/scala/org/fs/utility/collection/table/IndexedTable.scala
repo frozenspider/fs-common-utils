@@ -47,11 +47,21 @@ trait IndexedTable[+A]
 
   /** Adds/replaces the row in the table, padding table if necessary. */
   @throws[IllegalArgumentException]("if the index was negative")
-  override def withRow[B >: A](r: Int, row: Map[Int, B]): IndexedTable[B]
+  override def withRow[B >: A](r: Int, row: RowType[B]): IndexedTable[B] = {
+    val rowSeq = row.foldLeft(IndexedSeq.fill[Option[B]](row.keys.max + 1)(None)) {
+      case (seq, (c, v)) => seq.updated(c, Some(v))
+    }
+    withRow(r, rowSeq)
+  }
 
   /** Adds/replaces the column in the table, padding table if necessary. */
   @throws[IllegalArgumentException]("if the index was negative")
-  override def withCol[B >: A](c: Int, col: Map[Int, B]): IndexedTable[B]
+  override def withCol[B >: A](c: Int, col: ColType[B]): IndexedTable[B] = {
+    val colSeq = col.foldLeft(IndexedSeq.fill[Option[B]](col.keys.max + 1)(None)) {
+      case (seq, (c, v)) => seq.updated(c, Some(v))
+    }
+    withCol(c, colSeq)
+  }
 
   /**
    * Adds/replaces the sequence-bassed row in the table, padding table if necessary.
@@ -66,6 +76,30 @@ trait IndexedTable[+A]
    */
   @throws[IllegalArgumentException]("if the index was negative")
   def withCol[B >: A](c: Int, col: IndexedSeq[Option[B]]): IndexedTable[B]
+
+  /**
+   * Inserts the sequence-bassed row in the table, causing rows shift and padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
+  @throws[IllegalArgumentException]("if the index was negative")
+  def withInsertedRow[B >: A](r: Int, row: RowType[B]): IndexedTable[B] = {
+    val rowSeq = row.foldLeft(IndexedSeq.fill[Option[B]](row.keys.max + 1)(None)) {
+      case (seq, (c, v)) => seq.updated(c, Some(v))
+    }
+    withInsertedRow(r, rowSeq)
+  }
+
+  /**
+   * Inserts the sequence-bassed column in the table, causing columns shift and padding table if necessary.
+   * Empty trailing elements are NOT trimmed.
+   */
+  @throws[IllegalArgumentException]("if the index was negative")
+  def withInsertedCol[B >: A](c: Int, col: ColType[B]): IndexedTable[B] = {
+    val colSeq = col.foldLeft(IndexedSeq.fill[Option[B]](col.keys.max + 1)(None)) {
+      case (seq, (c, v)) => seq.updated(c, Some(v))
+    }
+    withInsertedCol(c, colSeq)
+  }
 
   /**
    * Inserts the sequence-bassed row in the table, causing rows shift and padding table if necessary.

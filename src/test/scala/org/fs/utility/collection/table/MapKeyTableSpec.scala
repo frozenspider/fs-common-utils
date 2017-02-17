@@ -91,6 +91,8 @@ class MapKeyTableSpec extends Spec {
         val expectedValue = r * 10 + ci
         assert(table(r, c) === expectedValue)
         assert(table.get(r, c) === Some(expectedValue))
+        assert(table.find(_ == expectedValue) === Some(expectedValue))
+        assert(table.findCell(_ == expectedValue) === Some((r, c, expectedValue)))
       }
       assert(table.get(0, "d") === None)
       assert(table.get(2, "a") === None)
@@ -154,6 +156,9 @@ class MapKeyTableSpec extends Spec {
         Seq(null, null, "!")
       )))
       assert(table5.sizes === (4, 4))
+
+      // Alternate signature
+      assert(table + (0, "d", "x") === table + ((0, "d"), "x"))
     }
 
     def `removing elements` = {
@@ -186,6 +191,9 @@ class MapKeyTableSpec extends Spec {
       )))
       assert(table5.sizes === (2, 3))
       assert(table5.trim.sizes === (1, 1))
+
+      // Alternate signature
+      assert(table - (0, "a") === table - ((0, "a")))
     }
 
     def `removing non-existing element` = {

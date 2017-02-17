@@ -123,6 +123,8 @@ class IndexedSeqTableSpec extends Spec {
         val expectedValue = r * 10 + c
         assert(table(r, c) === expectedValue)
         assert(table.get(r, c) === Some(expectedValue))
+        assert(table.find(_ == expectedValue) === Some(expectedValue))
+        assert(table.findCell(_ == expectedValue) === Some((r, c, expectedValue)))
       }
       assert(table.get(0, 3) === None)
       assert(table.get(2, 0) === None)
@@ -188,6 +190,12 @@ class IndexedSeqTableSpec extends Spec {
         Seq("y")
       )))
       assert(table5.sizes === (4, 4))
+
+      // Alternate signature
+      assert(table + (0, 3, "x") === table + ((0, 3), "x"))
+
+      intercept[IAEx] { table + (-1, 0, "x") }
+      intercept[IAEx] { table + (0, -1, "x") }
     }
 
     def `removing elements` = {
@@ -220,11 +228,16 @@ class IndexedSeqTableSpec extends Spec {
       )))
       assert(table5.sizes === (2, 3))
       assert(table5.trim.sizes === (1, 2))
+
+      // Alternate signature
+      assert(table - (0, 0) === table - ((0, 0)))
     }
 
     def `removing non-existing element` = {
       assert((table - (5, 9)) === table)
       assert((table - (0, 0) - (0, 0) - (0, 0)) === (table - (0, 0)))
+      intercept[IAEx] { table - (0, -1) }
+      intercept[IAEx] { table - (-1, 0) }
     }
 
     def `concatenating tables` = {
@@ -371,7 +384,7 @@ class IndexedSeqTableSpec extends Spec {
       }
 
       def `removal ` = {
-        def testTable[A](t: IndexedTable[A], sizes: (Int, Int), values: Seq[Int]) = {
+        def testTable[A](t: IndexedSeqTable[A], sizes: (Int, Int), values: Seq[Int]) = {
           assert(t.sizes === sizes)
           assert(t.elements === values)
         }
@@ -388,6 +401,8 @@ class IndexedSeqTableSpec extends Spec {
         assert(table.withoutCol(2) != table)
         assert(table.withoutCol(3) === table)
         assert(table.withoutCol(4) === table)
+        intercept[IAEx]{ table.withoutRow(-1) }
+        intercept[IAEx]{ table.withoutCol(-1) }
       }
 
       def `replace row (map)` = {
@@ -410,6 +425,9 @@ class IndexedSeqTableSpec extends Spec {
           Seq("x", "y", "z"),
           Seq(10, 11, 12)
         )))
+        intercept[IAEx] {
+          table.withRow(-1, SeqOfSome("x", "y").toDefinedMap)
+        }
       }
 
       def `replace row (seq)` = {
@@ -432,9 +450,51 @@ class IndexedSeqTableSpec extends Spec {
           Seq("x", "y", "z", null, null),
           Seq(10, 11, 12, null, null)
         )))
+        intercept[IAEx] {
+          table.withRow(-1, SeqOfSome("x", "y"))
+        }
       }
 
-      def `insert row` = {
+      def `insert row (map)` = {
+        assert(table.withInsertedRow(0, SeqOfSome("x", "y", "z").toDefinedMap) === fromAnything[Any](Seq(
+          Seq("x", "y", "z"),
+          Seq(0, 1, 2),
+          Seq(10, 11, 12)
+        )))
+        assert(table.withInsertedRow(2, SeqOfSome("x", "y", "z").toDefinedMap) === fromAnything[Any](Seq(
+          Seq(0, 1, 2),
+          Seq(10, 11, 12),
+          Seq("x", "y", "z")
+        )))
+        assert(table.withInsertedRow(3, SeqOfSome("x", "y", "z").toDefinedMap) === fromAnything[Any](Seq(
+          Seq(0, 1, 2),
+          Seq(10, 11, 12),
+          Seq(),
+          Seq("x", "y", "z")
+        )))
+        assert(table.withInsertedRow(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) === fromAnything[Any](Seq(
+          Seq("x", "y", "z", "!"),
+          Seq(0, 1, 2),
+          Seq(10, 11, 12)
+        )))
+        assert(table
+          .withInsertedRow(0, SeqOfSome("x", "y").toDefinedMap)
+          .withInsertedRow(1, SeqOfSome("z", "!").toDefinedMap)
+          === fromAnything[Any](Seq(
+            Seq("x", "y"),
+            Seq("z", "!"),
+            Seq(0, 1, 2),
+            Seq(10, 11, 12)
+          )))
+        assert(table.withInsertedRow(0, ISeq(Some("x"), Some("y"), None, None, Some("z")).toDefinedMap) === fromAnything[Any](Seq(
+          Seq("x", "y", null, null, "z"),
+          Seq(0, 1, 2, null, null),
+          Seq(10, 11, 12, null, null)
+        )))
+        intercept[IAEx] { table.withInsertedRow(-1, SeqOfSome("x", "y").toDefinedMap) }
+      }
+
+      def `insert row (seq)` = {
         assert(table.withInsertedRow(0, SeqOfSome("x", "y", "z")) === fromAnything[Any](Seq(
           Seq("x", "y", "z"),
           Seq(0, 1, 2),
@@ -470,6 +530,7 @@ class IndexedSeqTableSpec extends Spec {
           Seq(0, 1, 2, null, null),
           Seq(10, 11, 12, null, null)
         )))
+        intercept[IAEx] { table.withInsertedRow(-1, SeqOfSome("x", "y")) }
       }
 
       def `replace col (map)` = {
@@ -493,6 +554,9 @@ class IndexedSeqTableSpec extends Spec {
             Seq(0, 1, 2, null, "x"),
             Seq(10, 11, 12, null, "y")
           )))
+        intercept[IAEx] {
+          table.withCol(-1, SeqOfSome("x", "y").toDefinedMap)
+        }
       }
 
       def `replace col (seq)` = {
@@ -519,9 +583,39 @@ class IndexedSeqTableSpec extends Spec {
             Seq(null, null, null, null, null),
             Seq(null, null, null, null, null)
           )))
+        intercept[IAEx] {
+          table.withCol(-1, SeqOfSome("x", "y"))
+        }
       }
 
-      def `insert col` = {
+      def `insert col (map)` = {
+        assert(table.withInsertedCol(0, SeqOfSome("x", "y").toDefinedMap) === fromAnything[Any](Seq(
+          Seq("x", 0, 1, 2),
+          Seq("y", 10, 11, 12)
+        )))
+        assert(table.withInsertedCol(0, SeqOfSome("x", "y", "z", "!").toDefinedMap) === fromAnything[Any](Seq(
+          Seq("x", 0, 1, 2),
+          Seq("y", 10, 11, 12),
+          Seq("z"),
+          Seq("!")
+        )))
+        assert(table.withInsertedCol(4, SeqOfSome("x", "y").toDefinedMap)
+          === fromAnything[Any](Seq(
+            Seq(0, 1, 2, null, "x"),
+            Seq(10, 11, 12, null, "y")
+          )))
+        assert(table.withInsertedCol(4, ISeq(Some("x"), None, None, None, Some("y")).toDefinedMap)
+          === fromAnything[Any](Seq(
+            Seq(0, 1, 2, null, "x"),
+            Seq(10, 11, 12, null, null),
+            Seq(null, null, null, null, null),
+            Seq(null, null, null, null, null),
+            Seq(null, null, null, null, "y")
+          )))
+        intercept[IAEx] { table.withInsertedCol(-1, SeqOfSome("x", "y").toDefinedMap) }
+      }
+
+      def `insert col (seq)` = {
         assert(table.withInsertedCol(0, SeqOfSome("x", "y")) === fromAnything[Any](Seq(
           Seq("x", 0, 1, 2),
           Seq("y", 10, 11, 12)
@@ -545,6 +639,7 @@ class IndexedSeqTableSpec extends Spec {
             Seq(null, null, null, null, null),
             Seq(null, null, null, null, null)
           )))
+        intercept[IAEx] { table.withInsertedCol(-1, SeqOfSome("x", "y")) }
       }
 
       def `swap ` = {
@@ -566,12 +661,10 @@ class IndexedSeqTableSpec extends Spec {
           Seq(2, 1, 0),
           Seq(12, 11, 10)
         )))
-        intercept[IAEx] {
-          table.swapRows(0, 2)
-        }
-        intercept[IAEx] {
-          table.swapCols(0, 3)
-        }
+        intercept[IAEx] { table.swapRows(0, 2) }
+        intercept[IAEx] { table.swapCols(0, 3) }
+        intercept[IAEx] { table.swapRows(-1, 0) }
+        intercept[IAEx] { table.swapCols(0, -1) }
       }
 
       def `sort rows` = {

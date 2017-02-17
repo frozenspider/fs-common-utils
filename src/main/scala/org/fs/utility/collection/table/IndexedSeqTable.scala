@@ -96,25 +96,13 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
     new IndexedSeqTable(newRows)
   }
 
-  @throws[IllegalArgumentException]("if the index was negative")
-  override def withRow[B >: A](r: Int, row: Map[Int, B]): IndexedSeqTable[B] = {
-    checkBounds(r >= 0, "Index should be non-negative")
-    val emptyRow = IndexedSeq.fill[Option[B]](row.keys.max + 1)(None)
-    val newRow = row.foldLeft(emptyRow) {
-      case (row, (i, v)) => row.updated(i, Some(v))
-    }
-    withRow(r, newRow)
-  }
+  // Type system hack needed because of self-type method double override
+  override def withRow[B >: A](r: Int, row: RowType[B]): IndexedSeqTable[B] =
+    super.withRow(r, row).asInstanceOf[IndexedSeqTable[B]]
 
-  @throws[IllegalArgumentException]("if the index was negative")
-  override def withCol[B >: A](c: Int, col: Map[Int, B]): IndexedSeqTable[B] = {
-    checkBounds(c >= 0, "Index should be non-negative")
-    val emptyCol = IndexedSeq.fill[Option[B]](col.keys.max + 1)(None)
-    val newCol = col.foldLeft(emptyCol) {
-      case (col, (i, v)) => col.updated(i, Some(v))
-    }
-    withCol(c, newCol)
-  }
+  // Type system hack needed because of self-type method double override
+  override def withCol[B >: A](c: Int, col: ColType[B]): IndexedSeqTable[B] =
+    super.withCol(c, col).asInstanceOf[IndexedSeqTable[B]]
 
   @throws[IllegalArgumentException]("if the index was negative")
   override def withRow[B >: A](r: Int, row: IndexedSeq[Option[B]]): IndexedSeqTable[B] = {
@@ -249,8 +237,5 @@ object IndexedSeqTable {
       if (is.length <= i) None
       else is(i)
     }
-
-    def getFlatOrElse(i: Int, default: => T): T =
-      getFlat(i).getOrElse(default)
   }
 }
