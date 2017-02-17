@@ -3,9 +3,13 @@
 .settings
 .classpath
 .project
-.cache*
+.cache-*
 
 # sbt
 target/
-src-managed/
-.history
+src_managed/
+lib_managed/
+project/
+
+*.class
+*.log
