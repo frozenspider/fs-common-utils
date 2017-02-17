@@ -3,7 +3,7 @@
 .settings
 .classpath
 .project
-.cache-main
+.cache-*
 
 # sbt
 target/
