@@ -10,9 +10,9 @@ class RichCollectionImplicitsSpec extends Spec {
   object `RichIterable ` {
     import RichCollectionImplicits.RichIterable
 
-    def `asd` = {
-      Seq(Option(1)).traverse()
-      //
-    }
+//    def `asd` = {
+//      Seq(Option(1)).traverse()
+//      //
+//    }
   }
 }
