@@ -30,45 +30,49 @@ trait GenTable[RKT, CKT, +A]
    * </pre>
    */
   override def toString: String = {
-    val stringTable = this map {
-      case null => "null"
-      case v    => v.toString
-    }
-    val maxColumnWidths: Seq[(Option[CKT], Int)] = {
-      val leftColumnWidth = Map(
-        None -> rowKeys.map(_.toString.length).max
-      )
-      val initialWidths = leftColumnWidth ++ colKeys.map(idx =>
-        Some(idx) -> idx.toString.length
-      ).toMap
-      val unordered = stringTable.elementsWithIndices.foldLeft(initialWidths) {
-        case (acc, (_, c, str)) => acc updated (Some(c), acc(Some(c)) max str.length)
+    if (isEmpty) {
+      "+"
+    } else {
+      val stringTable = this map {
+        case null => "null"
+        case v    => v.toString
       }
-      Seq(None -> unordered(None)) ++ (colKeys map Some.apply map (key => key -> unordered(key)))
-    }
-    val separatorString: String =
-      maxColumnWidths map ("-" * _._2) mkString ("+", "+", "+")
-    val lines: Seq[String] = {
-      def toPaddedString(a: Any, l: Int): String = {
-        a.toString.padTo(l, " ").mkString
+      val maxColumnWidths: Seq[(Option[CKT], Int)] = {
+        val leftColumnWidth = Map(
+          None -> rowKeys.map(_.toString.length).max
+        )
+        val initialWidths = leftColumnWidth ++ colKeys.map(idx =>
+          Some(idx) -> idx.toString.length
+        ).toMap
+        val unordered = stringTable.elementsWithIndices.foldLeft(initialWidths) {
+          case (acc, (_, c, str)) => acc updated (Some(c), acc(Some(c)) max str.length)
+        }
+        Seq(None -> unordered(None)) ++ (colKeys map Some.apply map (key => key -> unordered(key)))
       }
-      val lineOne =
-        maxColumnWidths.toSeq map {
-          case (key, len) => toPaddedString(key getOrElse " ", len)
-        } mkString ("|", "|", "|")
-      lineOne +: stringTable.rowKeys.map(r =>
-        maxColumnWidths map {
-          case (key, len) =>
-            val stringValue = key map (c => stringTable get (r, c) getOrElse " ") getOrElse r
-            toPaddedString(stringValue, len)
-        } mkString ("|", "|", "|")
+      val separatorString: String =
+        maxColumnWidths map ("-" * _._2) mkString ("+", "+", "+")
+      val lines: Seq[String] = {
+        def toPaddedString(a: Any, l: Int): String = {
+          a.toString.padTo(l, " ").mkString
+        }
+        val lineOne =
+          maxColumnWidths.toSeq map {
+            case (key, len) => toPaddedString(key getOrElse " ", len)
+          } mkString ("|", "|", "|")
+        lineOne +: stringTable.rowKeys.map(r =>
+          maxColumnWidths map {
+            case (key, len) =>
+              val stringValue = key map (c => stringTable get (r, c) getOrElse " ") getOrElse r
+              toPaddedString(stringValue, len)
+          } mkString ("|", "|", "|")
+        )
+      }
+      lines mkString (
+        separatorString + "\n",
+        "\n" + separatorString + "\n",
+        "\n" + separatorString
       )
     }
-    lines mkString (
-      separatorString + "\n",
-      "\n" + separatorString + "\n",
-      "\n" + separatorString
-    )
   }
 }
 

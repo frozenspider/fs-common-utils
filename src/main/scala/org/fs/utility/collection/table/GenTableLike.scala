@@ -46,8 +46,7 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2], +TransposedType[+A2]]
   def sizes: (Int, Int)
 
   /** Number of elements in the table */
-  lazy val count: Int =
-    elements.size
+  def count: Int
 
   /**
    * Whether this table contains no elements.
@@ -112,10 +111,12 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2], +TransposedType[+A2]]
   /** Adds/replaces the given column in the table. This might increase column count by more than 1 depending on table implementation. */
   def withCol[B >: A](c: CKT, col: ColType[B]): SelfType[B]
 
+  /** @see withRow */
   def withEmptyRow(r: RKT): SelfType[A] = {
     withRow(r, emptyRow)
   }
 
+  /** @see withCol */
   def withEmptyCol(c: CKT): SelfType[A] = {
     withCol(c, emptyCol)
   }

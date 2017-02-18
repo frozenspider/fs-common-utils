@@ -118,7 +118,7 @@ class MapKeyTable[RKT, CKT, +A] private (
   }
 
   override def -(r: RKT, c: CKT): MapKeyTable[RKT, CKT, A] =
-    if ((rowKeys contains r) || (colKeys contains c)) {
+    if ((rowKeys contains r) && (colKeys contains c)) {
       val rows2 = rows map {
         case (r2, row) if r2 == r => (r2, row - c)
         case (r2, row)            => (r2, row)
