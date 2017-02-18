@@ -4,6 +4,7 @@ scalaVersion := "2.11.8"
 crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 coverageEnabled := true
+coverageExcludedPackages := "org.fs.utility.internal.*"
 
 libraryDependencies ++= Seq(
   // Test

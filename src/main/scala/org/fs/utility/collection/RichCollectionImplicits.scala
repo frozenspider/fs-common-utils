@@ -96,10 +96,10 @@ trait RichCollectionImplicits {
       val gzOs = new GZIPOutputStream(baos)
       try {
         gzOs.write(bs.toArray)
-        baos.toByteArray
       } finally {
         gzOs.close()
       }
+      baos.toByteArray
     }
 
     /** @return content decompressed using GZIP */
