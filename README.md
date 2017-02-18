@@ -2,6 +2,9 @@
 
 Common utility classes and implicit helpers library for Scala.
 
+Has no runtime dependencies and is cross-compiled for Scala 2.11 and 2.12,
+published via [JitPack](https://jitpack.io/#frozenspider/fs-common-utils).
+
 [![Build Status](https://travis-ci.org/frozenspider/fs-common-utils.svg?branch=master)](https://travis-ci.org/frozenspider/fs-common-utils)
 [![JitPack](https://jitpack.io/v/frozenspider/fs-common-utils.svg)](https://jitpack.io/#frozenspider/fs-common-utils)
 [![codecov.io](http://codecov.io/github/frozenspider/fs-common-utils/coverage.svg?branch=master)](http://codecov.io/github/frozenspider/fs-common-utils?branch=master)
@@ -52,7 +55,7 @@ val result = StopWatch.measure {
 
 Represented by two main traits `IndexedTable` and `KeyTable`, which are designed
 to represents a two-dimensional `Seq` and `Map` like structures.
-(Their respective default implementations are `IndexedSeqTable` and `KeyTable`).
+(Their respective default implementations are `IndexedSeqTable` and `MapKeyTable`).
 
 Some details of their behaviour differs greatly between them - namely, sorting and adding/removing
 rows/columns.
