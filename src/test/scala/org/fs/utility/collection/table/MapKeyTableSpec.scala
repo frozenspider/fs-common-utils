@@ -257,12 +257,12 @@ class MapKeyTableSpec extends Spec {
 
     def `string representation` = {
       assert(table.toString === """|+-+--+--+--+
-                                  || |a |b |c |
-                                  |+-+--+--+--+
-                                  ||0|0 |1 |2 |
-                                  |+-+--+--+--+
-                                  ||1|10|11|12|
-                                  |+-+--+--+--+""".stripMargin)
+                                   || |a |b |c |
+                                   |+-+--+--+--+
+                                   ||0|0 |1 |2 |
+                                   |+-+--+--+--+
+                                   ||1|10|11|12|
+                                   |+-+--+--+--+""".stripMargin)
     }
 
     object `collection methods -` {

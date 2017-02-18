@@ -24,7 +24,7 @@ trait RichGeneralImplicits {
      * Pretty-printed version of a time between two events, in form {@code HH:mm:ss}, e.g. 112:35:16
      * (112 hours, 35 minutes and 16 seconds). Will round the value to the closest integer.
      * <p>
-     * Mostly useful with {@link System#currentTimeMillis}.
+     * Mostly useful with {@link System#currentTimeMillis} and {@link StopWatch}.
      *
      * @param elapsedMilliSeconds
      *            the difference between two time marks, e.g.
