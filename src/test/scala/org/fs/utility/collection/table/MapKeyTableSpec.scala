@@ -643,6 +643,23 @@ class MapKeyTableSpec extends Spec {
     }
   }
 
+  object `table with nulls -` {
+    val table = MKT.fromRows(LM(
+      "a" -> LM(1 -> "x", 2 -> null),
+      "b" -> LM(1 -> null, 2 -> "y")
+    ))
+
+    def `string representation` = {
+      assert(table.toString === """|+-+----+----+
+                                   || |1   |2   |
+                                   |+-+----+----+
+                                   ||a|x   |null|
+                                   |+-+----+----+
+                                   ||b|null|y   |
+                                   |+-+----+----+""".stripMargin)
+    }
+  }
+
   //
   // Helpers
   //

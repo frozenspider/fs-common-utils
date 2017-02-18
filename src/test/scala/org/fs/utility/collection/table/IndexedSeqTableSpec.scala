@@ -290,12 +290,12 @@ class IndexedSeqTableSpec extends Spec {
 
     def `string representation` = {
       assert(table.toString === """|+-+--+--+--+
-                                  || |0 |1 |2 |
-                                  |+-+--+--+--+
-                                  ||0|0 |1 |2 |
-                                  |+-+--+--+--+
-                                  ||1|10|11|12|
-                                  |+-+--+--+--+""".stripMargin)
+                                   || |0 |1 |2 |
+                                   |+-+--+--+--+
+                                   ||0|0 |1 |2 |
+                                   |+-+--+--+--+
+                                   ||1|10|11|12|
+                                   |+-+--+--+--+""".stripMargin)
     }
 
     object `collection methods -` {
@@ -382,6 +382,8 @@ class IndexedSeqTableSpec extends Spec {
         assert(!table.isColEmpty(2))
         assert(table.isColEmpty(3))
         assert(table.isColEmpty(100500))
+        assert(table.isRowEmpty(-1))
+        assert(table.isColEmpty(-1))
       }
 
       def `removal ` = {
@@ -753,14 +755,31 @@ class IndexedSeqTableSpec extends Spec {
 
     def `string representation` = {
       assert(table.toString === """|+-+-+--+-+-+
-                                  || |0|1 |2|3|
-                                  |+-+-+--+-+-+
-                                  ||0|0|1 | | |
-                                  |+-+-+--+-+-+
-                                  ||1| |11| | |
-                                  |+-+-+--+-+-+
-                                  ||2| |  | | |
-                                  |+-+-+--+-+-+""".stripMargin)
+                                   || |0|1 |2|3|
+                                   |+-+-+--+-+-+
+                                   ||0|0|1 | | |
+                                   |+-+-+--+-+-+
+                                   ||1| |11| | |
+                                   |+-+-+--+-+-+
+                                   ||2| |  | | |
+                                   |+-+-+--+-+-+""".stripMargin)
+    }
+  }
+
+  object `table with nulls -` {
+    val table = IST.fromValues(Seq(
+      Seq("x", null),
+      Seq(null, "y")
+    ))
+
+    def `string representation` = {
+      assert(table.toString === """|+-+----+----+
+                                   || |0   |1   |
+                                   |+-+----+----+
+                                   ||0|x   |null|
+                                   |+-+----+----+
+                                   ||1|null|y   |
+                                   |+-+----+----+""".stripMargin)
     }
   }
 
