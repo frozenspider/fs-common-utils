@@ -21,11 +21,11 @@ class RichCollectionImplicitsSpec extends Spec {
       assert(empty.mapWithIndex((el, i) => fail()) === empty)
     }
 
-    def `each with index` = {
+    def `foreach with index` = {
       var acc = Seq.empty[String]
-      coll.eachWithIndex((el, i) => acc = acc :+ (el + i))
+      coll.foreachWithIndex((el, i) => acc = acc :+ (el + i))
       assert(acc === Seq("a0", "b1", "c2"))
-      empty.eachWithIndex((el, i) => fail())
+      empty.foreachWithIndex((el, i) => fail())
     }
 
     def `drop right while` = {

@@ -21,18 +21,31 @@ trait RichCollectionImplicits {
 
   /** Iterable[X] enriched with some of most general support methods */
   implicit class RichIterable[A, Repr](iter: GIL[A, Repr]) {
+    /**
+     * Map an iterable with its index.
+     *
+     * Roughly equivalent to `.zipWithIndex.map`, but allows inlining two-argument functions
+     * without pattern matching.
+     */
     def mapWithIndex[B, Repr2 <: GTL[(A, Int), Repr2], Repr3](f: (A, Int) => B)(
       implicit bf1: CBF[Repr, (A, Int), Repr2], bf2: CBF[Repr2, B, Repr3]): Repr3 =
       {
         iter.zipWithIndex map (x => f(x._1, x._2))
       }
 
-    def eachWithIndex[U, That <: GTL[(A, Int), _]](f: (A, Int) => U)(
+    /**
+     * Applies a two-argument function to every element of an iterable along with its index.
+     *
+     * Roughly equivalent to `.zipWithIndex.foreach`, but allows inlining two-argument functions
+     * without pattern matching.
+     */
+    def foreachWithIndex[U, That <: GTL[(A, Int), _]](f: (A, Int) => U)(
       implicit bf1: CBF[Repr, (A, Int), That]): Unit =
       {
         iter.zipWithIndex foreach (x => f(x._1, x._2))
       }
 
+    /** Same as `dropWhile`, just reversed */
     def dropRightWhile(pred: A => Boolean)(implicit bf: CBF[Repr, A, Repr]): Repr = {
       val content = iter.toSeq.reverse.dropWhile(pred).reverse
       val builder = bf()
@@ -43,11 +56,13 @@ trait RichCollectionImplicits {
 
   /** IndexedSeqLike[X] enriched with some of most general support methods */
   implicit class RichIndexedSeqLike[A, Repr](is: IndexedSeqLike[A, Repr]) {
+    /** Retrieve an element by its index if its present, returning `None` otherwise */
     def get(i: Int): Option[A] = {
-      if (i < 0 || is.length <= i) None
+      if (i < 0 || i >= is.length) None
       else Some(is(i))
     }
 
+    /** Retrieve an element by its index if its present, returning result of `default` evaluation otherwise */
     def getOrElse[B >: A](i: Int, default: => B): B =
       get(i).getOrElse(default)
   }
