@@ -12,7 +12,7 @@ class IndexedSeqTable[+A] private (rows: IndexedSeq[IndexedSeq[Option[A]]])
   }
 
   override lazy val sizes: (Int, Int) = {
-    (rows.size, (rows.map(_.size) :+ 0).max)
+    (rows.size, rows.map(_.size).fold(0)(_ max _))
   }
 
   override lazy val count: Int = {
