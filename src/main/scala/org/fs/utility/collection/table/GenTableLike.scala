@@ -77,23 +77,39 @@ trait GenTableLike[RKT, CKT, +A, +SelfType[+A2], +TransposedType[+A2]]
     }
   }
 
-  /** @return whether or not element with given key pair can be obtained from this table */
-  override final def isDefinedAt(rc: (RKT, CKT)): Boolean = {
-    isDefinedAt(rc._1, rc._2)
-  }
+  /** @return whether or not table contains an element with the given keys */
+  override final def isDefinedAt(rc: (RKT, CKT)): Boolean =
+    contains(rc._1, rc._2)
 
-  /** @return whether or not element with given keys can be obtained from this table */
-  def isDefinedAt(r: RKT, c: CKT): Boolean = {
+  /** @return whether or not table contains an element with the given keys */
+  def isDefinedAt(r: RKT, c: CKT): Boolean =
+    contains(r, c)
+
+  /** @return whether or not table contains an element with the given keys */
+  final def contains(rc: (RKT, CKT)): Boolean =
+    contains(rc._1, rc._2)
+
+  /** @return whether or not table contains an element with the given keys */
+  def contains(r: RKT, c: CKT): Boolean =
     get(r, c).isDefined
-  }
 
-  /** Attempts to get an element by its key pair */
+  /** Attempts to retrieve an element by its key pair */
   final def get(rc: (RKT, CKT)): Option[A] = {
     get(rc._1, rc._2)
   }
 
-  /** Attempts to get an element by its keys */
+  /** Attempts to retrieve an element by its keys */
   def get(r: RKT, c: CKT): Option[A]
+
+  /** Retrieves an element by its key pair if its present, returning to evaluation result of `default` otherwise */
+  final def getOrElse[B >: A](rc: (RKT, CKT), default: => B): B = {
+    get(rc._1, rc._2).getOrElse(default)
+  }
+
+  /** Retrieves an element by its keys if its present, returning to evaluation result of `default` otherwise */
+  final def getOrElse[B >: A](r: RKT, c: CKT, default: => B): B = {
+    get(r, c).getOrElse(default)
+  }
 
   def rowKeys: IndexedSeq[RKT]
 

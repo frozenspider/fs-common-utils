@@ -1,12 +1,13 @@
 name         := "fs-common-utils"
-version      := "0.1.1"
-scalaVersion := "2.11.8"
-crossScalaVersions := Seq("2.11.8", "2.12.1")
+version      := "0.1.2"
+scalaVersion := "2.12.3"
+crossScalaVersions := Seq("2.11.11", "2.12.3")
 
 coverageExcludedPackages := "org.fs.utility.internal.*"
 
 libraryDependencies ++= Seq(
   // Test
   "junit"         %  "junit"     % "4.12"  % "test",
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+  "org.scalactic" %% "scalactic" % "3.0.4" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.4" % "test"
 )
