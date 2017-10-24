@@ -13,7 +13,7 @@ published via [JitPack](https://jitpack.io/#frozenspider/fs-common-utils).
 ## Overview
 
 This library contains a few various general classes and helpers.
-Namely, those are implicit helpers, stopwatch and tables.
+Namely, those are implicit helpers and stopwatch.
 
 
 ### Implicit helpers
@@ -49,30 +49,3 @@ val result = StopWatch.measure {
   code()
 } { (r, time) => println(s"$r evaluated in $time ms")}
 ```
-
-
-### Tables
-
-Represented by two main traits `IndexedTable` and `KeyTable`, which are designed
-to represents a two-dimensional `Seq` and `Map` like structures.
-(Their respective default implementations are `IndexedSeqTable` and `MapKeyTable`).
-
-Some details of their behaviour differs greatly between them - namely, sorting and adding/removing
-rows/columns.
-
-Tables are also supplied with `toString` implementation producing a pretty-print like this:
-
-```
-IndexedTable  MapKeyTable
-+-+-+--+-+-+  +-+-+--+-+-+
-| |0|1 |2|3|  | |a|b |c|d|
-+-+-+--+-+-+  +-+-+--+-+-+
-|0|A|B | | |  |5|A|B | | |
-+-+-+--+-+-+  +-+-+--+-+-+
-|1| |CD| | |  |4| |CD| | |
-+-+-+--+-+-+  +-+-+--+-+-+
-|2| |  | | |  |3| |  | | |
-+-+-+--+-+-+  +-+-+--+-+-+
-```
-
-`IndexedTable` and `KeyTable` are considered to be relatively independant and never equal to each other.
