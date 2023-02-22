@@ -6,7 +6,7 @@ lazy val supportedScalaVersions = List(scala211, scala212, scala213)
 name                := "fs-common-utils"
 version             := "0.2.0"
 scalaVersion        := scala213
-crossScalaVersions  := supportedScalaVersions
+crossScalaVersions  := supportedScalaVersions ++ List("2.11.0", "2.12.0", "2.13.0")
 
 coverageExcludedPackages := "org.fs.utility.internal.*"
 
