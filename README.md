@@ -2,7 +2,7 @@
 
 Common utility classes and implicit helpers library for Scala.
 
-Has no runtime dependencies and is cross-compiled for Scala 2.11 and 2.12,
+Has no runtime dependencies and is cross-compiled for Scala 2.11, 2.12 and 2.13,
 published via [JitPack](https://jitpack.io/#frozenspider/fs-common-utils).
 
 [![JitPack](https://jitpack.io/v/frozenspider/fs-common-utils.svg)](https://jitpack.io/#frozenspider/fs-common-utils)
