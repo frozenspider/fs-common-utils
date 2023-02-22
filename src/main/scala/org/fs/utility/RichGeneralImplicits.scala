@@ -8,7 +8,7 @@ import java.io.PrintWriter
  *
  * @author FS
  */
-trait RichGeneralImplicits {
+private[utility] trait RichGeneralImplicits {
   /** Throwable enriched with some of most general support methods */
   implicit class RichThrowable[Th <: Throwable](th: Th) {
     /** @return stack trace printed to a string */
@@ -32,7 +32,7 @@ trait RichGeneralImplicits {
      * @return {@code HH:mm:ss} string
      */
     def hhMmSsString: String = {
-      val totalSeconds = Math.round(l.toDouble / 1000)
+      val totalSeconds = math.round(l.toDouble / 1000)
       val hours = totalSeconds / 3600
       val remainingSeconds = totalSeconds % 3600
       val minutes = remainingSeconds / 60

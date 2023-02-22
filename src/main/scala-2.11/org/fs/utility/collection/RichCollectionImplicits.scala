@@ -17,7 +17,7 @@ import org.fs.utility.internal.Helpers
  *
  * @author FS
  */
-trait RichCollectionImplicits {
+private[utility] trait RichCollectionImplicits {
 
   /** Iterable[X] enriched with some of most general support methods */
   implicit class RichIterable[A, Repr](iter: GIL[A, Repr]) {

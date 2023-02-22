@@ -1,20 +1,17 @@
 package org.fs.utility.collection
 
 import org.junit.runner.RunWith
-import org.scalatest.Spec
-import org.scalatest.junit.JUnitRunner
-import scala.collection.GenIterableLike
-import scala.collection.GenIterable
-import scala.collection.IndexedSeqLike
-import scala.collection.GenTraversableLike
+import org.scalatest.refspec.RefSpec
+import org.scalatestplus.junit.JUnitRunner
+
+import org.fs.utility.collection.RichCollectionImplicits._
 
 @RunWith(classOf[JUnitRunner])
-class RichCollectionImplicitsSpec extends Spec {
+class RichCollectionImplicitsSpec extends RefSpec {
   object `RichIterable -` {
-    import RichCollectionImplicits.RichIterable
 
-    val coll: GenIterableLike[String, GenIterable[String]] = Seq("a", "b", "c")
-    val empty: GenIterableLike[String, GenIterable[String]] = Seq.empty
+    val coll = Seq("a", "b", "c")
+    val empty = Seq.empty[String]
 
     def `map with index` = {
       assert(coll.mapWithIndex((el, i) => el + i) === Seq("a0", "b1", "c2"))
@@ -37,10 +34,9 @@ class RichCollectionImplicitsSpec extends Spec {
   }
 
   object `RichIndexedSeqLike -` {
-    import RichCollectionImplicits.RichIndexedSeqLike
 
-    val coll: IndexedSeqLike[String, IndexedSeq[String]] = IndexedSeq("a", "b", "c")
-    val empty: IndexedSeqLike[String, IndexedSeq[String]] = IndexedSeq.empty
+    val coll = IndexedSeq("a", "b", "c")
+    val empty = IndexedSeq.empty
 
     def `get ` = {
       assert(coll.get(0) === Some("a"))
@@ -58,10 +54,8 @@ class RichCollectionImplicitsSpec extends Spec {
   }
 
   object `RichOptionsTraversable -` {
-    import RichCollectionImplicits.RichOptionsTraversable
-
-    val coll: GenTraversableLike[Option[String], Seq[Option[String]]] = Seq(None, Some("a"), None, Some("b"), Some("c"), None)
-    val empty: GenTraversableLike[Option[String], Seq[Option[String]]] = Seq.empty
+    val coll = Seq(None, Some("a"), None, Some("b"), Some("c"), None)
+    val empty = Seq.empty[Option[String]]
 
     def `yield defined` = {
       assert(coll.yieldDefined === Seq("a", "b", "c"))
@@ -70,8 +64,6 @@ class RichCollectionImplicitsSpec extends Spec {
   }
 
   object `RichOptionsIterable -` {
-    import RichCollectionImplicits.RichOptionsIterable
-
     val coll: Iterable[Option[String]] = Seq(None, Some("a"), None, Some("b"), Some("c"), None)
     val empty: Iterable[Option[String]] = Seq.empty
 
@@ -90,8 +82,6 @@ class RichCollectionImplicitsSpec extends Spec {
     val collGzip = gzipPrefix ++ Seq(0xFF, 0x4B, 0x4C, 0x4A, 0x4E, 0x01, 0x00, 0x11, 0xCD, 0x82, 0xED, 0x04, 0x00, 0x00, 0x00).map(_.toByte)
 
     object `Seq -` {
-      import RichCollectionImplicits.RichByteSeq
-
       val coll: Seq[Byte] = "abcd" map (_.toByte)
       val empty: Seq[Byte] = Seq.empty
 
@@ -117,8 +107,6 @@ class RichCollectionImplicitsSpec extends Spec {
     }
 
     object `Array -` {
-      import RichCollectionImplicits.RichByteArray
-
       val coll: Array[Byte] = "abcd".map(_.toByte).toArray
       val empty: Array[Byte] = Array.empty
 
