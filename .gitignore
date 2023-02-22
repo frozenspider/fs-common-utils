@@ -5,7 +5,12 @@
 .project
 .cache-*
 
+# IDEA
+*.iml
+.idea/
+
 # sbt
+.bsp
 target/
 src_managed/
 lib_managed/

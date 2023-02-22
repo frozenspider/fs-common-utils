@@ -2,7 +2,7 @@
 
 Common utility classes and implicit helpers library for Scala.
 
-Has no runtime dependencies and is cross-compiled for Scala 2.11 and 2.12,
+Has no runtime dependencies and is cross-compiled for Scala 2.11, 2.12 and 2.13,
 published via [JitPack](https://jitpack.io/#frozenspider/fs-common-utils).
 
 [![JitPack](https://jitpack.io/v/frozenspider/fs-common-utils.svg)](https://jitpack.io/#frozenspider/fs-common-utils)
@@ -23,8 +23,7 @@ Contains implicit wrappers, mainly for collections, with conveniece methods such
 
 Also provides `Long.hhMmSsString` and `Throwable.stackTraceString`.
 
-To import them all, either extend `org.fs.utility.Imports` or import
-`org.fs.utility.Imports._` - whichever you deem fit.
+To import them all, use `import org.fs.utility.Imports._`.
 
 
 ### Stopwatch

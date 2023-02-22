@@ -5,10 +5,9 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-import scala.collection.{ GenIterableLike => GIL }
-import scala.collection.{ GenTraversableLike => GTL }
-import scala.collection.IndexedSeqLike
-import scala.collection.generic.{ CanBuildFrom => CBF }
+import scala.collection.IterableOnceOps
+import scala.collection.IterableOps
+import scala.collection.IndexedSeqOps
 
 import org.fs.utility.internal.Helpers
 
@@ -17,22 +16,22 @@ import org.fs.utility.internal.Helpers
  *
  * @author FS
  */
-trait RichCollectionImplicits {
+private[utility] trait RichCollectionImplicits {
 
-  /** Iterable[X] enriched with some of most general support methods */
-  implicit class RichIterable[A, Repr](iter: GIL[A, Repr]) {
+  /** IterableOps[X] enriched with some of most general support methods */
+  implicit class RichIterable[A, CC[A2] <: IterableOps[A2, CC, _], C](iter: IterableOps[A, CC, C]) {
+
     /**
      * Map an iterable with its index.
      *
      * Roughly equivalent to `.zipWithIndex.map`, but allows inlining two-argument functions
      * without pattern matching.
      */
-    def mapWithIndex[B, Repr2 <: GTL[(A, Int), Repr2], Repr3](
-        f: (A, Int) => B
-    )(implicit bf1: CBF[Repr, (A, Int), Repr2], bf2: CBF[Repr2, B, Repr3]): Repr3 =
-      {
-        iter.zipWithIndex map (x => f(x._1, x._2))
-      }
+    def mapWithIndex[B](f: (A, Int) => B): CC[B] = {
+      val zipped: CC[(A, Int)] = iter.zipWithIndex
+      val res:    CC[B] = zipped.map((x: (A, Int)) => f(x._1, x._2))
+      res
+    }
 
     /**
      * Applies a two-argument function to every element of an iterable along with its index.
@@ -40,24 +39,20 @@ trait RichCollectionImplicits {
      * Roughly equivalent to `.zipWithIndex.foreach`, but allows inlining two-argument functions
      * without pattern matching.
      */
-    def foreachWithIndex[U, That <: GTL[(A, Int), _]](
-        f: (A, Int) => U
-    )(implicit bf1: CBF[Repr, (A, Int), That]): Unit =
-      {
-        iter.zipWithIndex foreach (x => f(x._1, x._2))
-      }
+    def foreachWithIndex[U](f: (A, Int) => U): Unit = {
+      iter.zipWithIndex foreach (x => f(x._1, x._2))
+    }
 
     /** Same as `dropWhile`, just reversed */
-    def dropRightWhile(pred: A => Boolean)(implicit bf: CBF[Repr, A, Repr]): Repr = {
+    def dropRightWhile(pred: A => Boolean): CC[A] = {
       val content = iter.toSeq.reverse.dropWhile(pred).reverse
-      val builder = bf()
-      content.foreach(builder += _)
-      builder.result()
+      iter.iterableFactory.from(content)
     }
   }
 
   /** IndexedSeqLike[X] enriched with some of most general support methods */
-  implicit class RichIndexedSeqLike[A, Repr](is: IndexedSeqLike[A, Repr]) {
+  implicit class RichIndexedSeqOps[A, CC[_], C](is: IndexedSeqOps[A, CC, C]) {
+
     /** Retrieve an element by its index if it's present, returning `None` otherwise */
     def get(i: Int): Option[A] = {
       if (i < 0 || i >= is.length) None
@@ -69,19 +64,19 @@ trait RichCollectionImplicits {
       get(i).getOrElse(default)
   }
 
-  /** Traversable[Option[X]] enriched with some of most general support methods */
-  implicit class RichOptionsTraversable[A, Repr <: GTL[Option[A], Repr]](iter: GTL[Option[A], Repr]) {
+  /** Iterable[Option[X]] enriched with some of most general support methods */
+  implicit class RichOptionsIterable[A, CC[A2] <: IterableOnceOps[A2, CC, _], C <: IterableOnceOps[Option[A], CC, C]](
+      iter: IterableOnceOps[Option[A], CC, C]
+  ) {
+
     /** @return collection of defined values */
-    def yieldDefined[Repr2 <: GTL[A, Repr2]](implicit bf: CBF[Repr, A, Repr2]): Repr2 = {
+    def yieldDefined: CC[A] = {
       iter filter (_.isDefined) map (_.get)
     }
-  }
 
-  /** Iterable[Option[X]] enriched with some of most general support methods */
-  implicit class RichOptionsIterable[A](iter: Iterable[Option[A]]) {
     /** @return map from indices to defined values */
     def toDefinedMap: Map[Int, A] = {
-      val indexed = iter.zipWithIndex
+      val indexed: CC[(Option[A], Int)] = iter.zipWithIndex
       val collected = indexed.collect({
         case (Some(v), i) => (i, v)
       })
@@ -90,6 +85,7 @@ trait RichCollectionImplicits {
   }
 
   implicit class RichByteSeq(bs: Seq[Byte]) {
+
     /** @return lowercase hex string of 2 characters per byte */
     def toHexString: String = {
       val sb = new StringBuilder(bs.length * 2)
@@ -126,6 +122,7 @@ trait RichCollectionImplicits {
   }
 
   implicit class RichByteArray(bs: Array[Byte]) {
+
     /** @return lowercase hex string of 2 characters per byte */
     def toHexString: String = RichByteSeq(bs).toHexString
 

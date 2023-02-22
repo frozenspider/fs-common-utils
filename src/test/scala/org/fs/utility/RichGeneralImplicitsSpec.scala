@@ -1,11 +1,11 @@
 package org.fs.utility
 
 import org.junit.runner.RunWith
-import org.scalatest.Spec
-import org.scalatest.junit.JUnitRunner
+import org.scalatest.refspec.RefSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class RichGeneralImplicitsSpec extends Spec {
+class RichGeneralImplicitsSpec extends RefSpec {
 
   object `rich throwable -` {
     import RichGeneralImplicits.RichThrowable
